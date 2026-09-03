@@ -56,12 +56,28 @@
 
 ---
 
-## 4. Phase 0 — Environment setup → **M0**
+## 4. Phase 0 — Environment setup → **M0** ⛔ BLOCKED — Bedrock Claude access unavailable on this AWS account (2026-09-02)
 
-> The Udacity cloud workspace has the CloudFormation stack pre-deployed and data pre-seeded. If you work **locally** you must do steps 0.3–0.4 yourself.
+> **2026-09-03 — AWS resources torn down** at the user's request (account can't run the project — L7).
+> CloudFormation stack `udacity-agentcore` `DELETE_COMPLETE`; both S3 buckets emptied + removed; DynamoDB
+> tables, IAM role, log group gone; no exports remain. No Guardrail / Runtime / Memory / KB were ever
+> created. **Local repo, `.venv`, `.env`, `docs/`, and evidence are kept.** To resume: re-deploy the
+> stack + re-seed (steps 0.4), on an account with Claude Haiku 4.5 + Sonnet 4.5 access — or use the
+> Udacity workspace (stack pre-deployed there).
+>
+> Infra + tooling steps were all proven working (uv env, stack deploy, seed, `config.py`, Titan
+> embeddings). The **only** blocker is L7: no reliable Claude 4.5 access on the AWS Academy account.
+> See `docs/lessons_learned.md` L7 for the full proof and options.
+
+> **Environment facts (this run):** Local Windows, **not** the Udacity cloud workspace. AWS account `303688964032`, an **AWS Academy / Vocareum learner lab** (`assumed-role/voclabs/user4334897`). CloudFormation stack was **not** pre-deployed — we deployed `starter_stack.yaml` ourselves. Creds expire; re-paste into `.env` on `ExpiredToken`.
+>
+> **Operational gotchas discovered:**
+> - `.env` lives at the **repo root** (`C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG\.env`), not `project/starter/`. `config.py`'s `load_dotenv()` still finds it (walks up). The **AWS CLI** does not — prefix CLI commands with `set -a && source ../../.env && set +a` (Git Bash) from `project/starter/`.
+> - Windows console is cp1252 → any script printing Unicode (`✓`, box chars) crashes with `UnicodeEncodeError`. Run everything with **`PYTHONUTF8=1`** (e.g. `PYTHONUTF8=1 uv run python …`). Affects `seed_data.py`, `config.py`, and `tests/test_agent.py`.
+> - `seed_data.py` has no `load_dotenv()` — it needs real env vars, so source `.env` before running it.
 
 ### Tasks
-- [ ] **0.1** Set up the environment with **uv** (from `project/starter/`):
+- [x] **0.1** Set up the environment with **uv** (from `project/starter/`):
       ```sh
       cd project/starter
       uv venv --python 3.12          # 3.12 matches the AgentCore runtime target
@@ -72,28 +88,25 @@
       # (or skip activation and prefix each command with `uv run`)
       ```
       Optional: `uv init --bare` here to get a `pyproject.toml` + `uv.lock` for reproducibility (does not conflict with the graded files).
-- [ ] **0.2** Paste Udacity temp creds into `project/starter/.env`; confirm identity: `aws sts get-caller-identity`
-- [ ] **0.3** Enable Bedrock model access in `us-east-1` console: **Claude Haiku 4.5**, **Claude Sonnet 4.5**, **Titan Embed Text v2** (`amazon.titan-embed-text-v2:0`)
-- [ ] **0.4 (local only)** Deploy foundation infra:
-      ```sh
-      aws cloudformation deploy --template-file infrastructure/starter_stack.yaml \
-        --stack-name udacity-agentcore --capabilities CAPABILITY_NAMED_IAM --region us-east-1
-      python infrastructure/seed_data.py
-      ```
-- [ ] **0.5** `cp .env.example .env` was effectively done — verify keys present
-- [ ] **0.6** Run `python config.py`
+- [x] **0.2** Temp creds in root `.env`; identity confirmed → `arn:aws:sts::303688964032:assumed-role/voclabs/user4334897=…`
+- [ ] **0.3** Bedrock model access — ⛔ **HARD BLOCKER on this account** (see `lessons_learned.md` **L7**). Titan Embed v2 ✅. Claude Haiku 4.5 / Sonnet 4.5 → `AccessDeniedException … Your AWS Marketplace subscription for this model cannot be completed at this time`. **Proven root cause:** `iam.simulate_principal_policy` on the `voclabs` role → `aws-marketplace:Subscribe = explicitDeny`. This is an **AWS Academy learner-lab limitation**; Anthropic Bedrock models are Marketplace-gated and lab accounts cannot complete the subscription. Course docs (`1-Introduction/3.md`, `1-Prompting/14-Project/2.md`) confirm: AWS accounts with Bedrock access **are provided** for the capstone; lab accounts "cannot complete" the Marketplace subscription. **No missing setup step exists.** **Path forward:** run on the **Udacity-provided workspace + AWS account**, or a **personal non-Academy AWS account** where the Anthropic models can be subscribed. `config.py` hardcodes the `us.anthropic.*` inference-profile IDs and is do-not-modify, so there is no code workaround.
+- [x] **0.4** Foundation infra deployed: `aws cloudformation deploy … --stack-name udacity-agentcore --capabilities CAPABILITY_NAMED_IAM` → `CREATE_COMPLETE`, 7 exports present. Then `PYTHONUTF8=1 … seed_data.py` → 4 customers, 15 orders, 6 S3 policy docs
+- [x] **0.5** `.env` keys present (11 keys; creds + region + project filled)
+- [x] **0.6** `PYTHONUTF8=1 uv run python config.py` → all CloudFormation rows populated
 
-### Milestone M0 — verification
-- `aws cloudformation describe-stacks --stack-name udacity-agentcore --query "Stacks[0].StackStatus"` → `CREATE_COMPLETE`
-- `python config.py` shows real values for: Orders Table, Customers Table, Workflow State Table, Policy Bucket, AgentCore Role. KB / Runtime / Guardrail rows showing `(not yet …)` is expected.
-- DynamoDB `udacity-agentcore-customers` has 4 items; `udacity-agentcore-orders` populated; S3 `…-policy-docs-…` has `policies/returns|shipping|warranty/` prefixes with `.txt` files.
+### Milestone M0 — verification (infra ✅ / model access ⛔)
+- Stack status → `CREATE_COMPLETE`; exports: OrdersTable, CustomersTable, WorkflowStateTable, PolicyBucket (`…-policy-docs-303688964032-8e6c6ea0`), VectorBucket (`…-vectors-303688964032-8e6c6ea0`), AgentCoreRoleArn (`arn:aws:iam::303688964032:role/udacity-agentcore-agentcore-role`), AgentLogGroup (`/aws/bedrock/agentcore/udacity-agentcore`)
+- `config.py` table: all 5 CloudFormation rows populated; KB/Runtime/Guardrail `(not yet …)` as expected
+- DynamoDB scan COUNT: `udacity-agentcore-customers` = **4**, `udacity-agentcore-orders` = **15**; CUST-001 = "Alice Johnson" / Premium
+- S3: `policies/{returns,shipping,warranty}/` each has `<domain>_policy.txt` + `customer_tiers.txt` (6 objects)
+- ⛔ Bedrock: `us.anthropic.claude-{haiku,sonnet}-4-5` → `AccessDeniedException` (Marketplace subscription cannot be completed by `voclabs`). Titan Embed v2 ✅. **M0 not passed** until this is resolved on a provided/personal account.
 
-### Evidence to collect
-- **E0.1** Terminal capture: `aws sts get-caller-identity` (redact account if desired) + stack status `CREATE_COMPLETE`
-- **E0.2** Terminal capture: full `python config.py` output table
-- **E0.3** Console screenshot: Bedrock → Model access showing the 3 models "Access granted"
-- **E0.4** Console screenshot: S3 bucket `policies/` tree (returns/, shipping/, warranty/ with files)
-- **E0.5** Console screenshot: DynamoDB `udacity-agentcore-customers` items (CUST-001..004)
+### Evidence collected → `docs/evidence/00-setup/`
+- **E0.1** ✅ `identity-and-stack.txt` — caller identity + `CREATE_COMPLETE` + exports
+- **E0.2** ✅ `config-py-output.txt` — full `config.py` table
+- **E0.3** ✅ `bedrock-model-access.txt` — live invoke results for the 3 models (stronger than a console screenshot)
+- **E0.4** ✅ `s3-policy-docs.txt` — `policies/` object listing  ·  _(optional: also grab the console S3 tree screenshot)_
+- **E0.5** ✅ `dynamodb-counts.txt` — scan COUNTs + CUST-001 sample  ·  _(optional: also grab the console items screenshot)_
 
 ---
 
