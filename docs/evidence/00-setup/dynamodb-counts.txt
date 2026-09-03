@@ -1,0 +1,29 @@
+# E0.5 - DynamoDB row counts  (2026-09-03T04:08:30Z)
+udacity-agentcore-customers COUNT: 4
+udacity-agentcore-orders COUNT: 15
+CUST-001 sample:
+{
+    "Item": {
+        "account_created": {
+            "S": "2021-03-15"
+        },
+        "preferred_contact": {
+            "S": "email"
+        },
+        "tier": {
+            "S": "Premium"
+        },
+        "customer_id": {
+            "S": "CUST-001"
+        },
+        "email": {
+            "S": "alice@example.com"
+        },
+        "name": {
+            "S": "Alice Johnson"
+        },
+        "total_orders": {
+            "N": "47"
+        }
+    }
+}

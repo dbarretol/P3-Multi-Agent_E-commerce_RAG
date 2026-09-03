@@ -1,0 +1,23 @@
+# E0.1 - Identity, stack status, exports  (2026-09-03T04:08:25Z)
+## caller identity
+{
+    "UserId": "AROAUNNKF27AIXK4ICBS5:user4334897=63141df8-923a-4da1-9e5f-a992329e4269",
+    "Account": "303688964032",
+    "Arn": "arn:aws:sts::303688964032:assumed-role/voclabs/user4334897=63141df8-923a-4da1-9e5f-a992329e4269"
+}
+
+## stack status
+CREATE_COMPLETE
+
+## exports
+-------------------------------------------------------------------------------------------------------------
+|                                                ListExports                                                |
++---------------------------------------+-------------------------------------------------------------------+
+|  udacity-agentcore-AgentCoreRoleArn   |  arn:aws:iam::303688964032:role/udacity-agentcore-agentcore-role  |
+|  udacity-agentcore-AgentLogGroup      |  /aws/bedrock/agentcore/udacity-agentcore                         |
+|  udacity-agentcore-CustomersTable     |  udacity-agentcore-customers                                      |
+|  udacity-agentcore-OrdersTable        |  udacity-agentcore-orders                                         |
+|  udacity-agentcore-PolicyBucket       |  udacity-agentcore-policy-docs-303688964032-8e6c6ea0              |
+|  udacity-agentcore-VectorBucket       |  udacity-agentcore-vectors-303688964032-8e6c6ea0                  |
+|  udacity-agentcore-WorkflowStateTable |  udacity-agentcore-workflow-state                                 |
++---------------------------------------+-------------------------------------------------------------------+

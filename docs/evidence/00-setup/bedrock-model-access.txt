@@ -1,0 +1,7 @@
+udacity-agentcore-customers: 0 items (approx)
+udacity-agentcore-orders: 0 items (approx)
+udacity-agentcore-workflow-state: 0 items (approx)
+S3 policy docs: ['policies/returns/customer_tiers.txt', 'policies/returns/return_policy.txt', 'policies/shipping/customer_tiers.txt', 'policies/shipping/shipping_policy.txt', 'policies/warranty/customer_tiers.txt', 'policies/warranty/warranty_policy.txt']
+MODEL FAIL us.anthropic.claude-haiku-4-5-20251001-v1:0 -> AccessDeniedException: An error occurred (AccessDeniedException) when calling the Converse operation: Model access is denied due to IAM user or service role is not authorized to perfo
+MODEL FAIL us.anthropic.claude-sonnet-4-5-20250929-v1:0 -> AccessDeniedException: An error occurred (AccessDeniedException) when calling the Converse operation: Model access is denied due to IAM user or service role is not authorized to perfo
+EMBED OK  amazon.titan-embed-text-v2:0
