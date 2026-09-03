@@ -1,7 +1,25 @@
-udacity-agentcore-customers: 0 items (approx)
-udacity-agentcore-orders: 0 items (approx)
-udacity-agentcore-workflow-state: 0 items (approx)
-S3 policy docs: ['policies/returns/customer_tiers.txt', 'policies/returns/return_policy.txt', 'policies/shipping/customer_tiers.txt', 'policies/shipping/shipping_policy.txt', 'policies/warranty/customer_tiers.txt', 'policies/warranty/warranty_policy.txt']
-MODEL FAIL us.anthropic.claude-haiku-4-5-20251001-v1:0 -> AccessDeniedException: An error occurred (AccessDeniedException) when calling the Converse operation: Model access is denied due to IAM user or service role is not authorized to perfo
-MODEL FAIL us.anthropic.claude-sonnet-4-5-20250929-v1:0 -> AccessDeniedException: An error occurred (AccessDeniedException) when calling the Converse operation: Model access is denied due to IAM user or service role is not authorized to perfo
-EMBED OK  amazon.titan-embed-text-v2:0
+<stdin>:2: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+# E0.3 - Bedrock model access diagnosis   2026-09-03T04:18:50.070209Z
+caller: arn:aws:sts::303688964032:assumed-role/voclabs/user4334897=63141df8-923a-4da1-9e5f-a992329e4269
+
+## get_foundation_model_availability (per region)
+  us-east-1 anthropic.claude-haiku-4-5-20251001-v1:0: auth=AUTHORIZED entitlement=AVAILABLE region=AVAILABLE agreement=NOT_AVAILABLE
+  us-east-1 anthropic.claude-sonnet-4-5-20250929-v1:0: auth=AUTHORIZED entitlement=AVAILABLE region=AVAILABLE agreement=NOT_AVAILABLE
+  us-east-2 anthropic.claude-haiku-4-5-20251001-v1:0: auth=AUTHORIZED entitlement=AVAILABLE region=AVAILABLE agreement=NOT_AVAILABLE
+  us-east-2 anthropic.claude-sonnet-4-5-20250929-v1:0: auth=AUTHORIZED entitlement=AVAILABLE region=AVAILABLE agreement=NOT_AVAILABLE
+  us-west-2 anthropic.claude-haiku-4-5-20251001-v1:0: auth=AUTHORIZED entitlement=AVAILABLE region=AVAILABLE agreement=NOT_AVAILABLE
+  us-west-2 anthropic.claude-sonnet-4-5-20250929-v1:0: auth=AUTHORIZED entitlement=AVAILABLE region=AVAILABLE agreement=NOT_AVAILABLE
+
+## iam.simulate_principal_policy (caller role)
+  bedrock:InvokeModel                           -> allowed
+  bedrock:InvokeModelWithResponseStream         -> allowed
+  aws-marketplace:Subscribe                     -> explicitDeny
+  aws-marketplace:ViewSubscriptions             -> allowed
+
+## bedrock-runtime.converse  (us.anthropic inference profile)
+  us-east-1: ok=0/8   An error occurred (AccessDeniedException) when calling the Converse operation: Model access is denied due to IAM user or service role is not authorized to perform the required AWS Marketplace actions 
+  us-east-2: ok=0/8   An error occurred (AccessDeniedException) when calling the Converse operation: Model access is denied due to IAM user or service role is not authorized to perform the required AWS Marketplace actions 
+  us-west-2: ok=0/8   An error occurred (AccessDeniedException) when calling the Converse operation: Model access is denied due to IAM user or service role is not authorized to perform the required AWS Marketplace actions 
+
+## amazon.titan-embed-text-v2:0
+  OK
