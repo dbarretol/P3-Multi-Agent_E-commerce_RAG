@@ -15,6 +15,7 @@
 | **Never modify** | `config.py`, `tests/test_agent.py`, `src/agent_utils.py`, `src/bedrock_kb_retrieval.py`, `src/demo.py`, `infrastructure/*` |
 | **Model IDs** | Always reference `config.ORCHESTRATOR_MODEL_ID` (Haiku) and `config.WORKER_MODEL_ID` (Sonnet). Never hardcode a model string. |
 | **Run commands from** | `project/starter/` (so `load_dotenv()` finds `.env`) |
+| **Package manager** | `uv`. Create the env with `uv venv`, install with `uv pip install -r requirements.txt`. Run project commands either after activating `.venv`, or by prefixing with `uv run` (e.g. `uv run python tests/test_agent.py all`). Every bare `python …` command in this plan assumes the `.venv` is active. |
 | **Credentials** | Udacity STS temp creds in `project/starter/.env` (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN`). Expire in a few hours — re-paste on `ExpiredToken` / `InvalidClientTokenId`. |
 | **Test scoring** | `python tests/test_agent.py <taskN|all>` prints `Score: X/Y pts`. Target = 120/120. |
 
@@ -60,7 +61,17 @@
 > The Udacity cloud workspace has the CloudFormation stack pre-deployed and data pre-seeded. If you work **locally** you must do steps 0.3–0.4 yourself.
 
 ### Tasks
-- [ ] **0.1** `cd project/starter` and create venv: `python -m venv .venv` → activate → `pip install -r requirements.txt`
+- [ ] **0.1** Set up the environment with **uv** (from `project/starter/`):
+      ```sh
+      cd project/starter
+      uv venv --python 3.12          # 3.12 matches the AgentCore runtime target
+      uv pip install -r requirements.txt
+      # activate for the rest of the project:
+      #   PowerShell : .venv\Scripts\Activate.ps1
+      #   Git Bash   : source .venv/Scripts/activate
+      # (or skip activation and prefix each command with `uv run`)
+      ```
+      Optional: `uv init --bare` here to get a `pyproject.toml` + `uv.lock` for reproducibility (does not conflict with the graded files).
 - [ ] **0.2** Paste Udacity temp creds into `project/starter/.env`; confirm identity: `aws sts get-caller-identity`
 - [ ] **0.3** Enable Bedrock model access in `us-east-1` console: **Claude Haiku 4.5**, **Claude Sonnet 4.5**, **Titan Embed Text v2** (`amazon.titan-embed-text-v2:0`)
 - [ ] **0.4 (local only)** Deploy foundation infra:
