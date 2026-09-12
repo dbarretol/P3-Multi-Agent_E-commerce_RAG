@@ -881,17 +881,85 @@ def create_guardrail() -> tuple[str, str]:
             print(f"Guardrail already exists: {guardrail_id} (version: {guardrail_version})")
             return guardrail_id, guardrail_version
 
-    # TODO: Create the guardrail
-    # Use bedrock_client.create_guardrail() with:
-    #   - Content policy - block harmful categories at HIGH strength
-    #   - PII policy - block credit cards + SSNs; anonymize emails + phone numbers
-    #   - Topic policy - deny off-topic subjects (competitor_products, legal_threats, pricing_negotiations)
-    #   - Word policy - profanity filter
-    #   - blockedInputMessaging and blockedOutputsMessaging
+    content_policy_config = {
+        'filtersConfig': [
+            {'type': 'SEXUAL',     'inputStrength': 'HIGH',   'outputStrength': 'HIGH'},
+            {'type': 'VIOLENCE',   'inputStrength': 'HIGH',   'outputStrength': 'HIGH'},
+            {'type': 'HATE',       'inputStrength': 'HIGH',   'outputStrength': 'HIGH'},
+            {'type': 'INSULTS',    'inputStrength': 'MEDIUM', 'outputStrength': 'MEDIUM'},
+            {'type': 'MISCONDUCT', 'inputStrength': 'MEDIUM', 'outputStrength': 'MEDIUM'},
+        ]
+    }
 
-    # Promote from DRAFT to a versioned guardrail using create_guardrail_version()
+    sensitive_information_policy_config = {
+        'piiEntitiesConfig': [
+            {'type': 'CREDIT_DEBIT_CARD_NUMBER',  'action': 'BLOCK'},
+            {'type': 'US_SOCIAL_SECURITY_NUMBER', 'action': 'BLOCK'},
+            {'type': 'EMAIL',                     'action': 'ANONYMIZE'},
+            {'type': 'PHONE',                     'action': 'ANONYMIZE'},
+        ]
+    }
 
-    pass
+    topic_definitions = {
+        'competitor products': (
+            'Requests that mention, compare, or promote competitor products, '
+            'brands, or services instead of NovaMart.'
+        ),
+        'pricing negotiations': (
+            'Attempts to negotiate prices, request discounts outside published '
+            'promotions, or haggle over the cost of products or services.'
+        ),
+        'legal threats': (
+            'Statements threatening legal action, lawsuits, regulatory '
+            'complaints, or referencing an attorney in connection with the '
+            'interaction.'
+        ),
+    }
+    topic_policy_config = {
+        'topicsConfig': [
+            {
+                'name':       topic.title(),
+                'definition': topic_definitions[topic],
+                'type':       'DENY',
+            }
+            for topic in config.GUARDRAIL_BLOCKED_TOPICS
+        ]
+    }
+
+    word_policy_config = {
+        'managedWordListsConfig': [{'type': 'PROFANITY'}],
+    }
+
+    response = bedrock_client.create_guardrail(
+        name=config.GUARDRAIL_NAME,
+        description=(
+            "NovaMart customer support guardrail - enforces content safety, "
+            "PII protection, and topic restrictions for the multi-agent system."
+        ),
+        topicPolicyConfig=topic_policy_config,
+        contentPolicyConfig=content_policy_config,
+        wordPolicyConfig=word_policy_config,
+        sensitiveInformationPolicyConfig=sensitive_information_policy_config,
+        blockedInputMessaging=(
+            "I'm sorry, but I can't help with that request. Please rephrase "
+            "your question, or contact NovaMart customer support directly for "
+            "further assistance."
+        ),
+        blockedOutputsMessaging=(
+            "I'm sorry, I'm not able to share that information here. Please "
+            "contact NovaMart customer support directly for further assistance."
+        ),
+    )
+    guardrail_id = response['guardrailId']
+
+    version_response = bedrock_client.create_guardrail_version(
+        guardrailIdentifier=guardrail_id,
+        description='Initial production version',
+    )
+    guardrail_version = version_response['version']
+
+    print(f"Guardrail created: {guardrail_id} (version: {guardrail_version})")
+    return guardrail_id, guardrail_version
 
 
 def deploy_to_agentcore_runtime(
@@ -963,18 +1031,37 @@ def deploy_to_agentcore_runtime(
     )
     print(f"  Artifact uploaded: s3://{config.POLICY_BUCKET}/{artifact_key}")
 
-    # TODO: Deploy to AgentCore Runtime
-    # Use agentcore_control.create_agent_runtime() with:
-    #   - agentRuntimeName (runtime_name), description, roleArn
-    #   - networkConfiguration (PUBLIC)
-    #   - protocolConfiguration (MCP)
-    #   - agentRuntimeArtifact pointing to the S3 zip uploaded above
-    #     (bucket: config.POLICY_BUCKET, prefix: artifact_key, runtime: PYTHON_3_12)
-    #   - environmentVariables (AWS_REGION, PROJECT_NAME, KB IDs, AGENT_LOG_GROUP)
+    response = agentcore_control.create_agent_runtime(
+        agentRuntimeName=runtime_name,
+        description='NovaMart multi-agent customer support orchestrator',
+        agentRuntimeArtifact={
+            'codeConfiguration': {
+                'code': {
+                    's3': {
+                        'bucket': config.POLICY_BUCKET,
+                        'prefix': artifact_key,
+                    }
+                },
+                'runtime':    'PYTHON_3_12',
+                'entryPoint': ['main.py'],
+            }
+        },
+        roleArn=config.AGENTCORE_ROLE_ARN,
+        networkConfiguration={'networkMode': 'PUBLIC'},
+        protocolConfiguration={'serverProtocol': 'MCP'},
+        environmentVariables={
+            'AWS_REGION':      config.AWS_REGION,
+            'PROJECT_NAME':    config.PROJECT_NAME,
+            'RETURNS_KB_ID':   config.RETURNS_KB_ID,
+            'SHIPPING_KB_ID':  config.SHIPPING_KB_ID,
+            'WARRANTY_KB_ID':  config.WARRANTY_KB_ID,
+            'AGENT_LOG_GROUP': config.AGENT_LOG_GROUP,
+        },
+    )
     # Note: guardrailConfiguration is injected automatically via the event hook above.
-    # Return: response.get('agentRuntimeArn', response.get('arn', ''))
-
-    pass
+    runtime_arn = response.get('agentRuntimeArn', response.get('arn', ''))
+    print(f"  Runtime created: {runtime_arn}")
+    return runtime_arn
 
 
 # ═══════════════════════════════════════════════════════
