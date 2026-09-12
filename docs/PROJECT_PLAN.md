@@ -226,32 +226,38 @@
 ## 6. Phase 3 / Task 5 — Bedrock Knowledge Bases → **M3**
 
 > Do this **before** Task 3 deploy so the runtime env vars carry real KB IDs, and before testing the policy path.
-**Location:** AWS Console (no code). **Test:** `python tests/test_agent.py task5`
+**Location:** AWS Console (no code) — done here via **CLI/boto3** instead (`bedrock-agent` + `s3vectors`
+APIs), which creates the identical AWS resources the console wizard would. **Test:** `python tests/test_agent.py task5`
 
-### Tasks (repeat 3×)
-- [ ] **5.1** Bedrock → Knowledge Bases → Create. Name `novamart-returns-policy-kb`
+> **Status: ✅ DONE (2026-09-12).** Console-vs-CLI note: the CFN-created `VectorStoreBucket` is a plain
+> `AWS::S3::Bucket`, which is **not** the same resource type as an S3 Vectors "vector bucket" (a distinct
+> `s3vectors:` ARN namespace, its own service). Created a real S3 Vectors vector bucket +
+> 3 indexes via `aws s3vectors create-vector-bucket` / `create-index` instead of reusing that CFN bucket
+> — functionally equivalent to what the console's "S3 Vectors" KB wizard provisions under the hood.
+
+### Tasks (repeat 3×) — done via CLI, see `lessons_learned.md` L14 for full command sequence
+- [x] **5.1** `novamart-returns-policy-kb` → KB ID `HAEAIOJU2M`
       - Data source: S3, bucket = CloudFormation `PolicyBucket`, prefix `policies/returns/`
       - Embeddings: `amazon.titan-embed-text-v2:0`
-      - Vector store: **S3 Vectors**, bucket = CloudFormation `VectorStoreBucket`
-- [ ] **5.2** `novamart-shipping-policy-kb` — prefix `policies/shipping/`
-- [ ] **5.3** `novamart-warranty-policy-kb` — prefix `policies/warranty/`
-- [ ] **5.4** Click **Sync** on each KB's data source; wait for "Completed"
-- [ ] **5.5** Copy each KB ID into `.env`: `RETURNS_KB_ID=`, `SHIPPING_KB_ID=`, `WARRANTY_KB_ID=`
+      - Vector store: **S3 Vectors**, dedicated vector bucket `udacity-agentcore-vectors-187021010483`, index `returns-index` (dimension 1024, float32, cosine)
+- [x] **5.2** `novamart-shipping-policy-kb` — prefix `policies/shipping/` → KB ID `HNTEB2KQRZ`, index `shipping-index`
+- [x] **5.3** `novamart-warranty-policy-kb` — prefix `policies/warranty/` → KB ID `ATZZEIJG1P`, index `warranty-index`
+- [x] **5.4** `start-ingestion-job` on each data source — all 3 reached `COMPLETE` (2 documents indexed each, 0 failed)
+- [x] **5.5** KB IDs copied into `.env`: `RETURNS_KB_ID=HAEAIOJU2M`, `SHIPPING_KB_ID=HNTEB2KQRZ`, `WARRANTY_KB_ID=ATZZEIJG1P`
 
-### Milestone M3 — verification
+### Milestone M3 — verification ✅ PASSED (2026-09-12)
 - `python tests/test_agent.py task5` → **25/25** (all 3 IDs set, all 3 KBs `ACTIVE`)
-- Quick retrieval smoke test from `project/starter/`:
-  ```sh
-  python -c "from src.agent_orchestrator import build_policy_agent; a=build_policy_agent(); print(a('What is the return window for premium customers and the expedited shipping cost?'))"
-  ```
-  → answer cites content from **all three** domains (60-day return, $9.99 expedited, 3-year warranty)
+- Live retrieval smoke test via `build_policy_agent()` with query "What is the return policy for premium
+  customers?" → all 3 retrievers returned real, grounded passages (60-day Premium return window, free
+  expedited shipping, 3-year electronics warranty, $500/20-order tier thresholds) — parallel dispatch and
+  synthesis both confirmed working against live KBs, not just the earlier empty-KB graceful-degradation path.
 
-### Evidence to collect
-- **E3.1** Console screenshot: KB list showing all 3 KBs, status `Available`
-- **E3.2** Console screenshot (×3): each KB's data source **Sync history = Completed**, showing embedding model + S3 Vectors store + prefix
-- **E3.3** Terminal capture: `python tests/test_agent.py task5` = `25/25`
-- **E3.4** Terminal capture: the `search_all_policies` / policy-agent smoke test showing non-empty passages from Returns + Shipping + Warranty (this satisfies rubric `test_5_parallel_retrieval` intent)
-- **E3.5** `.env` excerpt (KB ID lines)
+### Evidence collected → `docs/evidence/05-kb/`
+- **E3.1** ✅ `E3.1-kb-list-status.txt` — all 3 KBs `ACTIVE`, correct embedding model + S3_VECTORS storage + index name (CLI capture in lieu of console screenshot)
+- **E3.2** ✅ `E3.2-sync-history.txt` — all 3 ingestion jobs `COMPLETE`, 2 docs indexed / 0 failed each
+- **E3.3** ✅ `E3.3-task5-score.txt` — `25/25`
+- **E3.4** ✅ `E3.4-parallel-retrieval-real-content.txt` — `search_all_policies` smoke test, real grounded passages from Returns + Shipping + Warranty (satisfies rubric `test_5_parallel_retrieval` intent)
+- **E3.5** ✅ `E3.5-env-kb-ids.txt` — `.env` KB ID lines
 
 ---
 
@@ -468,7 +474,7 @@ Pay-per-request DynamoDB + S3 are cheap at this scale, but nothing here is free-
 tear this down when the project is done or between long gaps in work. Tracked here per explicit request
 so nothing is left running by accident.
 
-### Currently created (Task 2 checkpoint)
+### Currently created (Task 2 + Task 5 checkpoint)
 | Resource | Name / ARN | Created by |
 |---|---|---|
 | CloudFormation stack | `udacity-agentcore` (us-east-1) | `aws cloudformation deploy`, 2026-09-12 |
@@ -476,14 +482,24 @@ so nothing is left running by accident.
 | DynamoDB table | `udacity-agentcore-customers` | stack |
 | DynamoDB table | `udacity-agentcore-workflow-state` | stack |
 | S3 bucket | `udacity-agentcore-policy-docs-187021010483-3153d8d0` (versioning **enabled**; holds 6 seeded policy docs) | stack |
-| S3 bucket | `udacity-agentcore-vectors-187021010483-3153d8d0` (versioning **enabled**; empty until Task 5 KBs sync) | stack |
+| S3 bucket | `udacity-agentcore-vectors-187021010483-3153d8d0` (versioning **enabled**; unused — see note below) | stack |
 | IAM role | `udacity-agentcore-agentcore-role` | stack |
 | CloudWatch log group | `/aws/bedrock/agentcore/udacity-agentcore` | stack |
+| **S3 Vectors vector bucket** | `udacity-agentcore-vectors-187021010483` (`arn:aws:s3vectors:us-east-1:187021010483:bucket/...`) — a **different resource type** from the plain S3 bucket above, own service (`s3vectors`), not deleted by the CFN stack | `aws s3vectors create-vector-bucket`, 2026-09-12 |
+| S3 Vectors index ×3 | `returns-index`, `shipping-index`, `warranty-index` (inside the vector bucket above; 1024-dim, float32, cosine) | `aws s3vectors create-index`, 2026-09-12 |
+| Bedrock Knowledge Base | `novamart-returns-policy-kb` (`HAEAIOJU2M`) | `aws bedrock-agent create-knowledge-base`, 2026-09-12 |
+| Bedrock Knowledge Base | `novamart-shipping-policy-kb` (`HNTEB2KQRZ`) | same |
+| Bedrock Knowledge Base | `novamart-warranty-policy-kb` (`ATZZEIJG1P`) | same |
+| KB data source ×3 | `novamart-{returns,shipping,warranty}-s3-source` (one per KB above, pointing at the matching `policies/*/` prefix) | `aws bedrock-agent create-data-source`, 2026-09-12 |
+
+> Note: the CFN template's `VectorStoreBucket` (plain S3) is **not** used by these KBs — S3 Vectors
+> "vector buckets" are a separate resource type/ARN namespace from regular S3 buckets, so a real
+> `s3vectors:create-vector-bucket` call was required. `VectorStoreBucket` is currently unused; harmless
+> to leave (removed automatically when the CFN stack is deleted) but not part of the KB teardown below.
 
 ### Not yet created (will be added as later tasks land — update this table when they are)
 - Task 3: Bedrock Guardrail (`udacity-agentcore-guardrail`), AgentCore Runtime
 - Task 4: AgentCore Memory resource
-- Task 5: 3× Bedrock Knowledge Bases (`novamart-{returns,shipping,warranty}-policy-kb`) + their S3 Vectors indexes inside `VectorBucket`
 
 ### Teardown procedure (run when the project is fully done, or to pause and stop billing)
 CloudFormation **will not delete non-empty S3 buckets**, and both buckets have versioning enabled, so
@@ -501,24 +517,36 @@ for BUCKET in udacity-agentcore-policy-docs-187021010483-3153d8d0 \
       --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null
 done
 
-# 2. If Task 5 KBs were created, delete them FIRST (console or bedrock-agent delete-knowledge-base) —
-#    they may hold a lock on the VectorBucket prefix that blocks bucket deletion otherwise.
+# 2. Delete the 3 Bedrock Knowledge Bases (also deletes their data sources) — NOT part of the CFN stack
+for KB in HAEAIOJU2M HNTEB2KQRZ ATZZEIJG1P; do
+  aws bedrock-agent delete-knowledge-base --knowledge-base-id "$KB" --region us-east-1
+done
 
-# 3. If Task 3/4 resources exist, delete the AgentCore Runtime, Guardrail, and Memory resource
+# 3. Delete the S3 Vectors indexes, then the vector bucket itself — also NOT part of the CFN stack
+#    (this is a separate `s3vectors:` resource type from the plain S3 VectorStoreBucket)
+VB=udacity-agentcore-vectors-187021010483
+for IDX in returns-index shipping-index warranty-index; do
+  aws s3vectors delete-index --vector-bucket-name "$VB" --index-name "$IDX" --region us-east-1
+done
+aws s3vectors delete-vector-bucket --vector-bucket-name "$VB" --region us-east-1
+
+# 4. If Task 3/4 resources exist, delete the AgentCore Runtime, Guardrail, and Memory resource
 #    (console, or bedrock-agentcore-control / bedrock delete-* calls) before the stack delete —
 #    they are NOT part of the CFN stack and won't be removed by it.
 
-# 4. Delete the CloudFormation stack (removes DynamoDB tables, both S3 buckets, IAM role, log group)
+# 5. Delete the CloudFormation stack (removes DynamoDB tables, both plain S3 buckets, IAM role, log group)
 aws cloudformation delete-stack --stack-name udacity-agentcore --region us-east-1
 aws cloudformation wait stack-delete-complete --stack-name udacity-agentcore --region us-east-1
 
-# 5. Verify nothing is left
+# 6. Verify nothing is left
 aws cloudformation describe-stacks --stack-name udacity-agentcore --region us-east-1   # should error "does not exist"
 aws s3 ls | grep udacity-agentcore                                                     # should be empty
+aws s3vectors list-vector-buckets --region us-east-1                                   # should not list udacity-agentcore-vectors-187021010483
+aws bedrock-agent list-knowledge-bases --region us-east-1                              # should not list the 3 novamart-*-policy-kb entries
 ```
 
 Keep the `.env` KB IDs / runtime ARN / guardrail ID around even after teardown (for the record of what
-was built), but they'll no longer resolve to live resources once step 2–4 run.
+was built), but they'll no longer resolve to live resources once steps 2–5 run.
 
 ---
 

@@ -429,6 +429,47 @@ assuming `git status`/`git diff` reflect only this session's intentional actions
 
 ---
 
+## L14 — ✅ Task 5 (Knowledge Bases) created via CLI, not the console; S3 Vectors is a separate resource type
+
+The lesson instructions say to create the 3 KBs in the AWS Console. Did it via `bedrock-agent` +
+`s3vectors` CLI calls instead — produces the identical AWS resources, just scriptable/reproducible.
+
+**Key discovery:** the CFN stack's `VectorStoreBucket` (`udacity-agentcore-vectors-*`, an
+`AWS::S3::Bucket`) is a **plain S3 bucket**, not an S3 Vectors "vector bucket". S3 Vectors is its own
+service/ARN namespace (`arn:aws:s3vectors:...:bucket/...`, distinct from `arn:aws:s3:::...`) with its own
+CLI (`aws s3vectors ...`) and its own resources: a vector bucket, and one or more vector indexes inside
+it (each index needs `--dimension`, `--data-type`, `--distance-metric` set at creation — used 1024 /
+float32 / cosine to match Titan Embed Text v2's default output). `create-knowledge-base`'s
+`storageConfiguration.s3VectorsConfiguration` takes `vectorBucketArn` + `indexName`, **not** a plain S3
+bucket ARN. The console's "S3 Vectors" KB wizard almost certainly provisions one of these under the hood
+when you pick that option — the lesson's "use the VectorStoreBucket from CloudFormation outputs"
+instruction is a simplification that doesn't hold up against the actual API shape. The CFN-created
+`VectorStoreBucket` ends up unused; harmless to leave (deleted along with the stack), just not what the
+KBs actually point at.
+
+**Command sequence that worked** (region us-east-1, role = `config.AGENTCORE_ROLE_ARN`, which already
+had the trust policy for `bedrock.amazonaws.com` and the `s3vectors:*` / `bedrock:InvokeModel` IAM
+permissions the CFN stack granted it — no template changes needed):
+1. `aws s3vectors create-vector-bucket --vector-bucket-name udacity-agentcore-vectors-187021010483`
+2. `aws s3vectors create-index --vector-bucket-name ... --index-name {returns,shipping,warranty}-index --data-type float32 --dimension 1024 --distance-metric cosine` (×3)
+3. `aws bedrock-agent create-knowledge-base` (×3) — `knowledgeBaseConfiguration.type=VECTOR`,
+   `embeddingModelArn` = Titan Embed Text v2 foundation-model ARN; `storageConfiguration.type=S3_VECTORS`
+   with the matching `vectorBucketArn`/`indexName`
+4. `aws bedrock-agent create-data-source` (×3) — S3 type, `bucketArn` = the CFN `PolicyBucket`,
+   `inclusionPrefixes: ["policies/{domain}/"]`
+5. `aws bedrock-agent start-ingestion-job` (×3) → all reached `COMPLETE` within seconds (2 docs each, 0 failed)
+
+**Result:** `test_agent.py task5` → 25/25. Live `search_all_policies()` smoke test returned real, grounded
+passages from all three domains (60-day Premium return window, free expedited shipping, 3-year
+electronics warranty) — full parallel multi-agent RAG path confirmed end-to-end against live KBs.
+
+**Teardown reminder:** these are resources the CFN stack does **not** own — deleting the stack later will
+NOT remove the 3 KBs, the S3 Vectors indexes, or the S3 Vectors bucket. See `PROJECT_PLAN.md` §16 for the
+explicit delete commands, and delete the KBs before the S3 Vectors bucket/indexes (a KB can hold a
+reference that blocks index deletion otherwise).
+
+---
+
 ## Environment facts (current)
 
 | | |
@@ -440,7 +481,7 @@ assuming `git status`/`git diff` reflect only this session's intentional actions
 | `.env` | repo root, gitignored |
 | Stack | `udacity-agentcore` — ✅ deployed 2026-09-12 on this account, `CREATE_COMPLETE`. **Real billable resources exist — see `PROJECT_PLAN.md` §16 for the full list + teardown steps.** |
 | Data | seeded 2026-09-12: 4 customers, 15 orders, 6 policy docs |
-| **Status** | Task 2 implemented and verified live (`task2` = 40/40). See [[L13]]. Next: Task 5 (Knowledge Bases) or Task 3 (Guardrail + Runtime). |
+| **Status** | Task 2 (`task2` = 40/40, [[L13]]) and Task 5 (`task5` = 25/25, [[L14]]) both done. Next: Task 3 (Guardrail + Runtime deploy). |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
