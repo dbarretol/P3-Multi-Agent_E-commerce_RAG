@@ -3,15 +3,15 @@
   Udacity AgentCore Project Configuration
 ============================================================
   Region:                    us-east-1
-  Account ID:                303688964032
+  Account ID:                187021010483
   Orchestrator Model:        us.anthropic.claude-haiku-4-5-20251001-v1:0
   Worker Model:              us.anthropic.claude-sonnet-4-5-20250929-v1:0
   --------------------------------------------------------
   Orders Table:              udacity-agentcore-orders
   Customers Table:           udacity-agentcore-customers
   Workflow State Table:      udacity-agentcore-workflow-state
-  Policy Bucket:             udacity-agentcore-policy-docs-303688964032-8e6c6ea0
-  AgentCore Role:            arn:aws:iam::303688964032:role/udacity-agentcore-agentcore-role
+  Policy Bucket:             udacity-agentcore-policy-docs-187021010483-3153d8d0
+  AgentCore Role:            arn:aws:iam::187021010483:role/udacity-agentcore-agentcore-role
   --------------------------------------------------------
   Returns KB ID:             (not yet created)
   Shipping KB ID:            (not yet created)
