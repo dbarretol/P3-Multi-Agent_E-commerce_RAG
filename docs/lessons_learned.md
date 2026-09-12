@@ -380,6 +380,55 @@ Ran a full diff of every graded/non-graded starter file against `raw.githubuserc
 
 ---
 
+## L13 — ✅ Task 2 implemented and verified live (2026-09-12); infra redeployed; unexpected git auto-commits discovered
+
+**Infra:** Redeployed `udacity-agentcore` CFN stack on the personal account (187021010483) and re-seeded
+data — closes out [[L11]]'s pending 0.4/0.6 steps. `uv run python config.py` now shows all 5 resource
+rows populated. Full resource list + teardown steps: `PROJECT_PLAN.md` §16.
+
+**Task 2 (`agent_orchestrator.py`):** Implemented all five `build_*_agent()` functions per the rubric —
+InventoryAgent (3 DynamoDB tools), RefundAgent (2 tools, 30/60-day tier logic), PolicyAgent (3 parallel
+retriever sub-agents + `ThreadPoolExecutor(max_workers=3)` coordinator), CommunicationAgent (1 tool),
+OrchestratorAgent (5 routing tools, all 6 routing rules in the system prompt). `test_agent.py task2` →
+**40/40**.
+
+One schema detail worth recording: `OrdersTable`'s key is a `customer_id`(HASH)+`order_id`(RANGE)
+composite with no GSI, but `check_order_status(order_id)` only receives `order_id` — so it has to
+`Table.scan(FilterExpression=Attr('order_id').eq(...))` rather than a direct `get_item`. Fine at this
+data scale (15 seeded orders); would need a GSI on `order_id` at real scale.
+
+**Live verification (real Bedrock + DynamoDB, not just the unit-style `task2` checks):**
+- Full chain proven against a real seeded order (`ORD-91987`, CUST-002/Standard, delivered 2026-06-28):
+  Orchestrator → Inventory → Refund → Communication, WorkflowState version 0→1→2→3, RefundAgent
+  correctly applied the 30-day Standard window and **denied** the return (order was ~76 days old at the
+  time of the test) — correct behavior, not a bug.
+- `demo.py`'s hardcoded `ORD-27176` doesn't exist in this run's randomly-seeded data (`seed_data.py`
+  generates random 5-digit order IDs each run), so that exact scenario prints "order not found" instead
+  of a happy-path refund. The system handled it gracefully — Orchestrator routed Inventory →
+  Communication and correctly skipped Refund. Not a code defect; just a seed-data/demo-script mismatch
+  worth knowing about if `demo.py`'s output looks different from the lesson's expected example.
+- `agent_orchestrator.py test` — all 3 canonical scenarios ran clean: return request, policy question
+  (parallel retrieval dispatched correctly, gracefully returned "no results" since Task 5's KBs don't
+  exist yet), and the math question (correctly answered directly by the Orchestrator with **no**
+  sub-agent routing — confirms routing rule 5).
+- No `ThrottlingException` observed across ~4 separate live test runs in immediate succession, despite
+  the account's 10 req/min quota ceiling noted in [[L11]].
+
+**⚠️ Unexpected discovery: automatic git commits + branch switch, not initiated via an explicit `git
+commit`/`git checkout` in this conversation.** Mid-session, `git reflog` showed a `checkout: moving from
+main to dev/task-01`, followed by commits with AI-style generated messages — one bundling the previous
+turn's docs edits, one for this turn's `agent_orchestrator.py` implementation. Verified carefully before
+concluding anything: `main` is untouched (still the pristine 34-TODO starter); `dev/task-01`'s HEAD
+matches the actual working-tree implementation exactly (confirmed via TODO-count diffing and `grep` for
+specific function/tool names — `search_all_policies`, `ShippingPolicyRetrieverAgent`, etc. are all
+present, contradicting the second commit's message which undersells the diff as "Returns retriever only").
+**No work was lost.** Most likely explanation: some checkpoint/autosave feature of the harness, not a
+second concurrent agent — but flagging clearly since it changed repo state (new branch, new commits)
+without an explicit git action being requested. If this recurs, check `git reflog` early rather than
+assuming `git status`/`git diff` reflect only this session's intentional actions.
+
+---
+
 ## Environment facts (current)
 
 | | |
@@ -387,11 +436,11 @@ Ran a full diff of every graded/non-graded starter file against `raw.githubuserc
 | Mode | Local Windows 11, Git Bash + PowerShell, `uv` |
 | AWS account | `187021010483` (personal), IAM user `udacity-agentcore-dev`, `AdministratorAccess`, permanent key (no session token) — see [[L11]] |
 | Region | us-east-1 |
-| Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`; no git remote configured (starter files verified against upstream via `gh api`/`curl`, see L12) |
+| Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`, currently on branch `dev/task-01` (see [[L13]] re: unexpected auto-commit/branch-switch); no git remote configured (starter files verified against upstream via `gh api`/`curl`, see L12) |
 | `.env` | repo root, gitignored |
-| Stack | `udacity-agentcore` — **not yet (re-)deployed** on this account (old Academy-account stack was torn down, L9) |
-| Data | not yet re-seeded on this account |
-| **Status** | Phase 0 unblocked (model access resolved, L11). Next action: redeploy CFN stack + re-seed, then start Task 2. |
+| Stack | `udacity-agentcore` — ✅ deployed 2026-09-12 on this account, `CREATE_COMPLETE`. **Real billable resources exist — see `PROJECT_PLAN.md` §16 for the full list + teardown steps.** |
+| Data | seeded 2026-09-12: 4 customers, 15 orders, 6 policy docs |
+| **Status** | Task 2 implemented and verified live (`task2` = 40/40). See [[L13]]. Next: Task 5 (Knowledge Bases) or Task 3 (Guardrail + Runtime). |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown

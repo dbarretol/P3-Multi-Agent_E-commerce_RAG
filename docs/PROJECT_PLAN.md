@@ -127,82 +127,99 @@
 
 **File:** `src/agent_orchestrator.py` · **Test:** `python tests/test_agent.py task2`
 
+> **Status: ✅ IMPLEMENTED & VERIFIED (2026-09-12)** — all 2.A–2.E builders complete in
+> `src/agent_orchestrator.py`. `task2` scores **40/40**. Live end-to-end runs (see evidence below) confirm
+> the full routing chain, DynamoDB optimistic locking, and the parallel multi-agent RAG path all work
+> against real Bedrock + DynamoDB on the personal account.
+
 ### 2.A — `build_inventory_agent()` → returns one `Agent`
-- [ ] `BedrockModel(model_id=config.WORKER_MODEL_ID, region_name=config.AWS_REGION, temperature=0.1)`
-- [ ] System prompt: pure **data gatherer**, never makes eligibility/refund decisions
-- [ ] Tool `check_order_status(order_id)` → query `config.ORDERS_TABLE`, return status/date/amount/return_eligible
-- [ ] Tool `get_customer_tier(customer_id)` → get item from `config.CUSTOMERS_TABLE`, return tier + profile
-- [ ] Tool `list_customer_orders(customer_id)` → query `config.ORDERS_TABLE` by `customer_id`, return list
-- [ ] Each tool has a docstring stating purpose / args / return
-- [ ] Ends with `return Agent(model=…, system_prompt=…, tools=[check_order_status, get_customer_tier, list_customer_orders])`
-- **Rubric:** exactly **3** tools; model = Sonnet; temp 0.1
+- [x] `BedrockModel(model_id=config.WORKER_MODEL_ID, region_name=config.AWS_REGION, temperature=0.1)`
+- [x] System prompt: pure **data gatherer**, never makes eligibility/refund decisions
+- [x] Tool `check_order_status(order_id)` → `Table.scan(FilterExpression=Attr('order_id').eq(...))` (no GSI on `order_id` alone — table PK is `customer_id`+`order_id` composite, so a scan+filter is required), returns status/date/price/return_eligible
+- [x] Tool `get_customer_tier(customer_id)` → get item from `config.CUSTOMERS_TABLE`, return tier + profile
+- [x] Tool `list_customer_orders(customer_id)` → query `config.ORDERS_TABLE` by `customer_id`, return list
+- [x] Each tool has a docstring stating purpose / args / return
+- [x] Ends with `return Agent(model=…, system_prompt=…, tools=[check_order_status, get_customer_tier, list_customer_orders])`
+- **Rubric:** exactly **3** tools; model = Sonnet; temp 0.1 ✅ verified by `task2` 2.1/2.2
 
 ### 2.B — `build_refund_agent()` → returns one `Agent`
-- [ ] `BedrockModel(config.WORKER_MODEL_ID, temperature=0.1)`
-- [ ] System prompt: decision process = (1) always call `get_inventory_context` first, (2) apply window by tier — **Standard 30 days, Premium 60 days**, (3) decide eligible / not eligible
-- [ ] Tool `get_inventory_context(session_id)` → `_read_workflow_state(session_id)` and return its `inventory_agent` field (or `{}`)
-- [ ] Tool `initiate_refund(customer_id, order_id, reason)` → update the order row in `config.ORDERS_TABLE` (status → return/refund), return `{return_reference, instructions}`
-- **Rubric:** exactly **2** tools; 30/60-day windows encoded
+- [x] `BedrockModel(config.WORKER_MODEL_ID, temperature=0.1)`
+- [x] System prompt: decision process = (1) always call `get_inventory_context` first, (2) apply window by tier — **Standard 30 days, Premium 60 days**, (3) decide eligible / not eligible
+- [x] Tool `get_inventory_context(session_id)` → `_read_workflow_state(session_id)` and return its `inventory_agent` field (or `{}`)
+- [x] Tool `initiate_refund(customer_id, order_id, reason)` → update the order row in `config.ORDERS_TABLE` (status → `return_requested`, `return_reference`), return `{return_reference, instructions}`
+- **Rubric:** exactly **2** tools; 30/60-day windows encoded — ✅ verified live (see M2 evidence: correctly denied a Standard-tier return past 30 days)
 
 ### 2.C — `build_policy_agent()` → returns one `Agent` (multi-agent RAG) ⭐
-- [ ] Build **3 retriever sub-agents** inside the function:
+- [x] Build **3 retriever sub-agents** inside the function:
       - `ReturnsPolicyRetrieverAgent` — tool calls `retrieve_from_knowledge_base(config.RETURNS_KB_ID, query)`
       - `ShippingPolicyRetrieverAgent` — `config.SHIPPING_KB_ID`
       - `WarrantyPolicyRetrieverAgent` — `config.WARRANTY_KB_ID`
       - each retriever: `BedrockModel(config.WORKER_MODEL_ID, temperature=0.0)`, exactly 1 tool
-- [ ] Implement `_run_retriever(domain, agent, query)` → invoke sub-agent, return `(domain, result_text)`
-- [ ] Implement `search_all_policies(query)`:
+- [x] Implement `_run_retriever(domain, agent, query)` → invoke sub-agent, return `(domain, result_text)`
+- [x] Implement `search_all_policies(query)`:
       - build `retrievers = {'Returns': …, 'Shipping': …, 'Warranty': …}`
-      - `trace.kb_start({...})` is already in starter — keep it
+      - `trace.kb_start({...})` is already in starter — kept
       - `with ThreadPoolExecutor(max_workers=3) as ex:` submit all 3, gather with `as_completed()`
       - after join: `trace.kb_done(len(retrievers))` then loop `trace.kb_result(domain, results.get(domain, '[No results]'))` for Returns/Shipping/Warranty
       - return combined text of all 3 domains
-- [ ] Coordinator: `BedrockModel(config.WORKER_MODEL_ID, temperature=0.2)`, system prompt = "always call `search_all_policies` first, then synthesize a grounded answer", tools = `[search_all_policies]`
-- **Rubric:** coordinator has exactly **1** tool (`search_all_policies`); `ThreadPoolExecutor(max_workers=3)` + `as_completed()`; retriever temp 0.0, coordinator temp 0.2
+- [x] Coordinator: `BedrockModel(config.WORKER_MODEL_ID, temperature=0.2)`, system prompt = "always call `search_all_policies` first, then synthesize a grounded answer", tools = `[search_all_policies]`
+- **Rubric:** coordinator has exactly **1** tool (`search_all_policies`); `ThreadPoolExecutor(max_workers=3)` + `as_completed()`; retriever temp 0.0, coordinator temp 0.2 — ✅ verified live: all 3 retrievers fired concurrently, no crash even with all 3 KB IDs still blank (graceful "no results found" per retriever, matching `retrieve_from_knowledge_base`'s documented empty-KB-ID behavior) — real passages need Task 5's KBs.
 - **⚠️ Quota note:** these 3 retriever calls fire **concurrently**, and the Bedrock cross-region quota is
   only **10 requests/min per model** on this account (see §4/§12). A single `search_all_policies` call
   already burns 3 of that 10 in one shot. Test this function in isolation with single, spaced-out calls
   first — don't hammer it in a tight loop while debugging, and expect to see `ThrottlingException` if you
-  run `test_agent.py all` immediately after several manual smoke tests.
+  run `test_agent.py all` immediately after several manual smoke tests. (No throttling observed during
+  the 2026-09-12 verification runs.)
 
 ### 2.D — `build_communication_agent()` → returns one `Agent`
-- [ ] `BedrockModel(config.WORKER_MODEL_ID, temperature=0.3)`
-- [ ] System prompt: warm, professional, empathetic; include all relevant findings from prior agents
-- [ ] Tool `get_full_workflow_context(session_id)` → `_read_workflow_state(session_id)` full record
+- [x] `BedrockModel(config.WORKER_MODEL_ID, temperature=0.3)`
+- [x] System prompt: warm, professional, empathetic; include all relevant findings from prior agents
+- [x] Tool `get_full_workflow_context(session_id)` → `_read_workflow_state(session_id)` full record
 - **Rubric:** exactly **1** tool; temp 0.3
 
 ### 2.E — `build_orchestrator_agent(inventory, refund, policy, communication)` → returns one `Agent`
-- [ ] `BedrockModel(config.ORCHESTRATOR_MODEL_ID, temperature=0.0)`
-- [ ] `initialize_session(session_id, customer_id)` → `_create_workflow_state(...)`; return confirmation
-- [ ] `route_to_inventory_agent(session_id, customer_id, request)` → read state → invoke `inventory_agent(...)` → `_update_workflow_state(session_id, {'inventory_agent': result}, expected_version=state['version'])`
-- [ ] `route_to_policy_agent(session_id, request)` → same read/invoke/update pattern with `{'policy_agent': result}`
-- [ ] `route_to_refund_agent(session_id, customer_id, request)` → `{'refund_agent': result}`
-- [ ] `route_to_communication_agent(session_id, customer_id, original_request)` → `{'communication_agent': result}`
-- [ ] System prompt enforces **all 6 routing rules verbatim**:
+- [x] `BedrockModel(config.ORCHESTRATOR_MODEL_ID, temperature=0.0)`
+- [x] `initialize_session(session_id, customer_id)` → `_create_workflow_state(...)`; return confirmation
+- [x] `route_to_inventory_agent(session_id, customer_id, request)` → read state → invoke `inventory_agent(...)` → `_update_workflow_state(session_id, {'inventory_agent': result}, expected_version=state['version'])`
+- [x] `route_to_policy_agent(session_id, request)` → same read/invoke/update pattern with `{'policy_agent': result}`
+- [x] `route_to_refund_agent(session_id, customer_id, request)` → `{'refund_agent': result}`
+- [x] `route_to_communication_agent(session_id, customer_id, original_request)` → `{'communication_agent': result}`
+- [x] System prompt enforces **all 6 routing rules verbatim**:
       1. Every request → `initialize_session` **first**
       2. Order status / return / refund → inventory **then** refund
       3. Policy-meaning questions (return windows, shipping rates, warranty terms) → policy agent
       4. Account questions ("my tier?", "am I premium?") → inventory agent, **never** policy agent
       5. Math / calculation → answer directly, no routing
       6. Every request → `route_to_communication_agent` **last**, always
-- [ ] CRITICAL: orchestrator **never** writes the final customer response itself
-- **Rubric:** exactly **5** tools; Haiku; temp 0.0
+- [x] CRITICAL: orchestrator **never** writes the final customer response itself
+- **Rubric:** exactly **5** tools; Haiku; temp 0.0 ✅ verified — live run confirmed rule 5 (math answered directly, no routing) and rule 2/6 (inventory → refund → communication, always ending on communication)
 
-### Milestone M1 — verification
-`python tests/test_agent.py task2` → checks 2.1, 2.2, 2.3, 2.4, 2.7 pass (agents instantiate, tool counts right, model split right). Score ≥ 30/40.
+### Milestone M1 — verification ✅ PASSED
+`python tests/test_agent.py task2` → checks 2.1, 2.2, 2.3, 2.4, 2.7 pass (agents instantiate, tool counts right, model split right). Score ≥ 30/40. → actual: 40/40 (M1 subsumed by M2).
 
-### Milestone M2 — verification
-- `python tests/test_agent.py task2` → **40/40**
-- `python src/demo.py` → completes without exception; trace shows `Orchestrator → Inventory → Refund → Communication`; final "AGENT RESPONSE" block references order `ORD-27176` and a return reference
-- `python src/agent_orchestrator.py test` → 3 scenarios each produce a response
-- (needs M3 for the policy scenario to return real passages; math + refund scenarios work without KBs)
+### Milestone M2 — verification ✅ PASSED (2026-09-12)
+- `python tests/test_agent.py task2` → **40/40** ✅
+- Full chain verified live against a real seeded order (`ORD-91987`, CUST-002/Standard): trace shows
+  `Orchestrator → Inventory → Refund → Communication`, WorkflowState version climbed 0→1→2→3, RefundAgent
+  correctly applied the 30-day Standard window and denied the return (order was ~76 days old) — a
+  correct decision, not a bug. (`demo.py`'s hardcoded `ORD-27176` doesn't exist in this run's randomly
+  seeded data, so that exact order number won't reproduce — the routing/logic is proven either way: the
+  no-such-order case was also verified live, correctly skipping straight to Inventory → Communication
+  without invoking Refund.)
+- `python src/agent_orchestrator.py test` → all 3 canonical scenarios ran clean, no exceptions, no
+  throttling: (1) return request → Orchestrator → Inventory → Communication (order not found, gracefully
+  handled), (2) policy question → Orchestrator → Policy (3 parallel retrievers, graceful empty-KB
+  handling) → Communication, (3) math question → answered directly by the orchestrator, **no sub-agent
+  routing** (rule 5 confirmed).
+- Policy scenario's *content* is necessarily generic until Task 5's KBs exist — parallel-dispatch
+  mechanics are fully proven now.
 
-### Evidence to collect
-- **E2.1** Terminal capture: `python tests/test_agent.py task2` showing `Score: 40/40 pts (100%)`
-- **E2.2** Terminal capture: full `python src/demo.py` trace (Orchestrator → Inventory → Refund → Communication + final response)
-- **E2.3** Terminal capture: `python src/agent_orchestrator.py test` — all 3 scenarios
-- **E2.4** `git diff` of `src/agent_orchestrator.py` for Task 2 (the implemented builders)
-- **E2.5** DynamoDB screenshot: a `udacity-agentcore-workflow-state` record with `version` > 0 and `inventory_agent` / `refund_agent` / `communication_agent` columns populated
+### Evidence collected → `docs/evidence/02-agents/`
+- **E2.1** ✅ `E2.1-task2-score.txt` — `Score: 40/40 pts (100%)`
+- **E2.2** ✅ `E2.2-full-refund-chain-trace.txt` — full Orchestrator → Inventory → Refund → Communication trace against real order `ORD-91987`
+- **E2.3** ✅ `E2.3-three-scenarios.txt` — `agent_orchestrator.py test`, all 3 canonical scenarios
+- **E2.4** ✅ `E2.4-task2-implementation.diff` — `git diff main dev/task-01 -- .../agent_orchestrator.py`
+- **E2.5** ✅ `E2.5-workflow-state-record.txt` — `aws dynamodb get-item` on the WorkflowState record for the run in E2.2: `version=3`, all four agent columns populated (text capture in lieu of a console screenshot)
 
 ---
 
@@ -441,3 +458,80 @@ Rationale: KBs (M3) must exist before deploy (M4) so the runtime env vars carry 
 ## 15. Starter-kit upstream parity
 
 Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-classroom` (`main`, no local git remote configured — checked via `gh api` + direct file diff): every starter file (`src/agent_orchestrator.py` incl. all TODOs, `agent_utils.py`, `bedrock_kb_retrieval.py`, `demo.py`, `config.py`, `tests/test_agent.py`, `infrastructure/*`, `requirements.txt`, `.env.example`, `README.md`) is **byte-identical** to upstream. Latest upstream commit touching `project/starter` is `4eeecb3` (2026-05-29) — already present locally. No newer scaffolding, fixes, or TODO changes exist upstream that this working copy is missing. See `lessons_learned.md` **L12** for the full check.
+
+---
+
+## 16. Active AWS resources — teardown checklist
+
+⚠️ **As of 2026-09-12, real billable AWS resources exist on the personal account (`187021010483`).**
+Pay-per-request DynamoDB + S3 are cheap at this scale, but nothing here is free-tier-guaranteed —
+tear this down when the project is done or between long gaps in work. Tracked here per explicit request
+so nothing is left running by accident.
+
+### Currently created (Task 2 checkpoint)
+| Resource | Name / ARN | Created by |
+|---|---|---|
+| CloudFormation stack | `udacity-agentcore` (us-east-1) | `aws cloudformation deploy`, 2026-09-12 |
+| DynamoDB table | `udacity-agentcore-orders` | stack |
+| DynamoDB table | `udacity-agentcore-customers` | stack |
+| DynamoDB table | `udacity-agentcore-workflow-state` | stack |
+| S3 bucket | `udacity-agentcore-policy-docs-187021010483-3153d8d0` (versioning **enabled**; holds 6 seeded policy docs) | stack |
+| S3 bucket | `udacity-agentcore-vectors-187021010483-3153d8d0` (versioning **enabled**; empty until Task 5 KBs sync) | stack |
+| IAM role | `udacity-agentcore-agentcore-role` | stack |
+| CloudWatch log group | `/aws/bedrock/agentcore/udacity-agentcore` | stack |
+
+### Not yet created (will be added as later tasks land — update this table when they are)
+- Task 3: Bedrock Guardrail (`udacity-agentcore-guardrail`), AgentCore Runtime
+- Task 4: AgentCore Memory resource
+- Task 5: 3× Bedrock Knowledge Bases (`novamart-{returns,shipping,warranty}-policy-kb`) + their S3 Vectors indexes inside `VectorBucket`
+
+### Teardown procedure (run when the project is fully done, or to pause and stop billing)
+CloudFormation **will not delete non-empty S3 buckets**, and both buckets have versioning enabled, so
+`aws s3 rm --recursive` alone is not enough — old versions must be purged too, or stack deletion fails.
+
+```sh
+# 1. Empty both versioned S3 buckets completely (current + all noncurrent versions + delete markers)
+for BUCKET in udacity-agentcore-policy-docs-187021010483-3153d8d0 \
+              udacity-agentcore-vectors-187021010483-3153d8d0; do
+  aws s3api delete-objects --bucket "$BUCKET" --delete "$(
+    aws s3api list-object-versions --bucket "$BUCKET" \
+      --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null
+  aws s3api delete-objects --bucket "$BUCKET" --delete "$(
+    aws s3api list-object-versions --bucket "$BUCKET" \
+      --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null
+done
+
+# 2. If Task 5 KBs were created, delete them FIRST (console or bedrock-agent delete-knowledge-base) —
+#    they may hold a lock on the VectorBucket prefix that blocks bucket deletion otherwise.
+
+# 3. If Task 3/4 resources exist, delete the AgentCore Runtime, Guardrail, and Memory resource
+#    (console, or bedrock-agentcore-control / bedrock delete-* calls) before the stack delete —
+#    they are NOT part of the CFN stack and won't be removed by it.
+
+# 4. Delete the CloudFormation stack (removes DynamoDB tables, both S3 buckets, IAM role, log group)
+aws cloudformation delete-stack --stack-name udacity-agentcore --region us-east-1
+aws cloudformation wait stack-delete-complete --stack-name udacity-agentcore --region us-east-1
+
+# 5. Verify nothing is left
+aws cloudformation describe-stacks --stack-name udacity-agentcore --region us-east-1   # should error "does not exist"
+aws s3 ls | grep udacity-agentcore                                                     # should be empty
+```
+
+Keep the `.env` KB IDs / runtime ARN / guardrail ID around even after teardown (for the record of what
+was built), but they'll no longer resolve to live resources once step 2–4 run.
+
+---
+
+## 17. Git workflow note (2026-09-12)
+
+This session's edits landed via **automatic commits** on a branch called `dev/task-01` (auto-created,
+switched to automatically — not a manual `git checkout` in this conversation), not on `main`. Two
+auto-generated commits appeared during Task 2 work (one for the docs update, one for the
+`agent_orchestrator.py` implementation); the second commit's message underdescribes the actual diff
+(mentions only a Returns retriever / `answer_policy_question`), but the actual committed content was
+verified to match the full Task 2 implementation (all 3 retrievers, `search_all_policies`, all 5
+orchestrator tools — confirmed via `git show a62602d:...` and TODO-count diffing). `main` remains the
+untouched, pristine starter (34 TODOs). No commits were made via an explicit `git commit` call in this
+conversation — whatever is auto-committing (harness checkpoint feature, most likely) did so on its own.
+Nothing appears lost, but flagging this so the branch/commit history isn't a surprise later — worth
+squashing/rebasing `dev/task-01` before a final submission if a clean, single-branch history is wanted.
