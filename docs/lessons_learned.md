@@ -296,6 +296,77 @@ for m in ["us.anthropic.claude-haiku-4-5-20251001-v1:0","us.anthropic.claude-son
     except Exception as e: print("FAIL", m, "->", type(e).__name__, str(e)[:120])
 ```
 
+**Re-confirmed again 2026-09-12** with a fresh set of Udacity temp credentials (`arn:aws:sts::303688964032:assumed-role/voclabs/user4334897=…`, new session id). Identical result — same `AccessDeniedException` on both Claude models
+(`... required AWS Marketplace actions (aws-marketplace:ViewSubscriptions, aws-marketplace:Subscribe) ...`), Titan still OK. Confirms the block is tied to the **account/role's IAM policy**, not to credential
+age/expiry — refreshing the temp creds can never fix it. Do not re-test this account again; move straight
+to the personal-account credentials (L11).
+
+---
+
+## L11 — ✅ RESOLVED (2026-09-09): moved to a personal AWS account, model access works
+
+Abandoned the Academy account. Switched `.env` to a **personal AWS account** (`187021010483`).
+Two sub-problems on the way:
+
+1. **`AWS_SESSION_TOKEN=none` in `.env` → `InvalidClientTokenId`.** python-dotenv loaded the literal
+   string `none` and boto3 sent it as the session token. Permanent IAM keys (`AKIA…`) must have **no**
+   session token — comment the line out entirely (`#AWS_SESSION_TOKEN=none`), don't set it empty either.
+
+2. **Wrong IAM principal.** First key belonged to `user/oss-models-terraform` — a scoped Terraform
+   service account with **zero** Bedrock permissions. Every call (incl. Titan) → plain
+   `AccessDeniedException: not authorized to perform: bedrock:InvokeModel`. This is an IAM-policy gap,
+   **not** the Marketplace block — account-level model-access / quota grants do nothing for a principal
+   that lacks `bedrock:*`. Fix: created a dedicated IAM user **`udacity-agentcore-dev`** with
+   `AdministratorAccess` (personal account, short-lived project; the CFN stack creates a named IAM role
+   and AgentCore needs `iam:PassRole`, so a narrow policy just adds friction), new access key → `.env`.
+   Better than widening the Terraform user: no shared blast radius, clean teardown (delete one user).
+
+**Verification (`scratchpad/verify2.py`, 2026-09-09):**
+```
+IDENTITY: arn:aws:iam::187021010483:user/udacity-agentcore-dev
+anthropic.claude-haiku-4-5-20251001-v1:0   INVOKE OK -> pong   (entitlement AVAILABLE, authorized)
+anthropic.claude-sonnet-4-5-20250929-v1:0  INVOKE OK -> pong   (agreement AVAILABLE)
+TITAN EMBED v2: OK
+```
+- First `Converse` call auto-subscribed via Marketplace in the background (Admin has
+  `aws-marketplace:Subscribe`). No console step needed.
+- `get_foundation_model_availability` for Haiku still reports `agreementAvailability: NOT_AVAILABLE`
+  while `entitlementAvailability: AVAILABLE` and the invoke succeeds — the agreement field is
+  **cosmetic/lagging**, trust the actual invoke.
+
+**Applied service quotas (us-east-1, both Haiku 4.5 and Sonnet 4.5 V1):**
+| quota | value |
+|---|---|
+| Cross-region model inference **requests** per minute | **10** (AWS default) |
+| Cross-region model inference **tokens** per minute | **5,000,000** (AWS default) |
+
+These are the stock defaults — the requested increase either hasn't landed or wasn't needed. 10 RPM is
+low for a 5-agent fan-out (orchestrator + 4 workers per query) — **expect `ThrottlingException` during
+multi-agent runs**; the SDK retries with backoff, or request an increase to ~50–100 RPM if it bites.
+
+**Pre-flight re-check (2026-09-12), full resource sweep before starting Task 2:**
+- Re-confirmed both models + Titan invoke OK. `agreementAvailability` for Haiku has since caught up to
+  `AVAILABLE` (was lagging `NOT_AVAILABLE` on 09-09) — confirms that field is just slow to sync, not a
+  real signal.
+- **Quota increase history found:** a request to raise Haiku's requests/min quota to 10,000 →
+  `CASE_CLOSED` (not granted; still stuck at the default 10). No successful increase has landed for
+  either model. Left as an accepted risk — retry with backoff should absorb it during solo dev/testing;
+  revisit only if `ThrottlingException` actually shows up.
+- `aws-marketplace` is **not a valid boto3 service name** (typo trap: it's not a low-level client) — don't
+  try to query subscriptions that way; a successful `Converse` call is the only test that matters.
+- CloudFormation stack `udacity-agentcore` confirmed **not deployed** (`ValidationError: Stack ... does
+  not exist`) — matches the L9 teardown; Phase 0.4 redeploy is still the next step.
+- `bedrock-agentcore-control` (`list_agent_runtimes`), `bedrock` (`list_guardrails`), and `bedrock-agent`
+  (`list_knowledge_bases`) all reachable, each returning 0 — expected pre-build state, confirms no
+  permission gaps for Tasks 3/4/5/6 ahead of time.
+- IAM user `udacity-agentcore-dev` has `AdministratorAccess` attached — no permission surprises expected
+  anywhere in the build.
+
+**Resume path** (do NOT start until user confirms): deploy CFN stack `udacity-agentcore`
+(`aws cloudformation deploy --template-file infrastructure/starter_stack.yaml --stack-name udacity-agentcore --capabilities CAPABILITY_NAMED_IAM --region us-east-1`)
+→ `PYTHONUTF8=1 uv run python infrastructure/seed_data.py` → `python config.py` → Task 2 in
+`project/starter/src/agent_orchestrator.py`. Set a **billing alarm (~$50)** first.
+
 ---
 
 ## Environment facts (this run)
