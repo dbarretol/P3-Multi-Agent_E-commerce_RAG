@@ -470,6 +470,30 @@ reference that blocks index deletion otherwise).
 
 ---
 
+## L15 — ✅ Task 3 (Guardrail + AgentCore Runtime) implemented and deployed (2026-09-12)
+
+Implemented `create_guardrail()` and `deploy_to_agentcore_runtime()` in `agent_orchestrator.py`. `boto3`
+API shapes confirmed via `aws ... create-guardrail --generate-cli-skeleton` /
+`aws bedrock-agentcore-control create-agent-runtime --generate-cli-skeleton` before writing code, rather
+than guessing field names — worth doing for any AgentCore/Bedrock control-plane call, since these are
+newer APIs not well covered by training data and the nesting is easy to get wrong (e.g.
+`agentRuntimeArtifact.codeConfiguration.code.s3.{bucket,prefix}` + a required `runtime` enum + a required
+`entryPoint` list — none of that is guessable from the starter's one-line TODO comment alone).
+
+`python src/agent_orchestrator.py deploy` ran clean end-to-end: Guardrail `mnsou98agg5p` (v1), Runtime
+`udacity_agentcore_runtime-fh9FZwA4FY` (PUBLIC/MCP, all 6 env vars incl. the real Task 5 KB IDs). Re-ran
+`deploy` a second time to confirm both the guardrail and runtime short-circuits correctly reuse the
+existing resources instead of erroring or duplicating. `test_agent.py task3` → 20/20.
+
+**Unplanned resource:** Step 6/6 of the pre-written `deploy_all()` pipeline (`deploy_agentcore_gateway()`,
+marked "pre-written — do not modify") also created a **real AgentCore Gateway**
+(`novamart-support-3153d8d0`) — this isn't part of the graded rubric for this project, but it's a live
+resource all the same (its 3 Lambda targets failed to register since no Lambda functions are deployed,
+but the gateway shell itself exists and isn't free). Added to the teardown list in `PROJECT_PLAN.md` §16
+— easy to miss since it's not one of the tasks being graded.
+
+---
+
 ## Environment facts (current)
 
 | | |
@@ -481,7 +505,7 @@ reference that blocks index deletion otherwise).
 | `.env` | repo root, gitignored |
 | Stack | `udacity-agentcore` — ✅ deployed 2026-09-12 on this account, `CREATE_COMPLETE`. **Real billable resources exist — see `PROJECT_PLAN.md` §16 for the full list + teardown steps.** |
 | Data | seeded 2026-09-12: 4 customers, 15 orders, 6 policy docs |
-| **Status** | Task 2 (`task2` = 40/40, [[L13]]) and Task 5 (`task5` = 25/25, [[L14]]) both done. Next: Task 3 (Guardrail + Runtime deploy). |
+| **Status** | Tasks 2 (40/40, [[L13]]), 5 (25/25, [[L14]]), 3 (20/20, [[L15]]) done — cumulative 85/120. Next: Task 4 (Memory) or Task 6 (Observability). |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown

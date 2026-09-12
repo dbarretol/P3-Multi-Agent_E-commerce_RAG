@@ -265,41 +265,46 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 
 **File:** `src/agent_orchestrator.py` · **Test:** `python tests/test_agent.py task3`
 
+> **Status: ✅ DONE (2026-09-12).** `task3` = **20/20**. Guardrail ID `mnsou98agg5p` (version `1`), Runtime
+> ARN `arn:aws:bedrock-agentcore:us-east-1:187021010483:runtime/udacity_agentcore_runtime-fh9FZwA4FY`.
+
 ### `create_guardrail()` → `(guardrail_id, guardrail_version)`
-- [ ] `bedrock` client `create_guardrail(name=config.GUARDRAIL_NAME, …)` with:
+- [x] `bedrock` client `create_guardrail(name=config.GUARDRAIL_NAME, …)` with:
       - **contentPolicyConfig**: SEXUAL, VIOLENCE, HATE → `HIGH` (input+output); INSULTS, MISCONDUCT → `MEDIUM`
       - **sensitiveInformationPolicyConfig**: `CREDIT_DEBIT_CARD_NUMBER`, `US_SOCIAL_SECURITY_NUMBER` → `BLOCK`; `EMAIL`, `PHONE` → `ANONYMIZE`
       - **topicPolicyConfig**: DENY topics — competitor products, pricing negotiations, legal threats (use `config.GUARDRAIL_BLOCKED_TOPICS`)
       - **wordPolicyConfig**: managed word list `PROFANITY`
       - `blockedInputMessaging` + `blockedOutputsMessaging` (friendly text)
-- [ ] `create_guardrail_version(guardrailIdentifier=id)` — promote DRAFT → numbered version
-- [ ] return `(id, version)`
-- (starter already handles the "guardrail already exists" short-circuit)
+- [x] `create_guardrail_version(guardrailIdentifier=id)` — promote DRAFT → numbered version
+- [x] return `(id, version)`
+- (starter already handles the "guardrail already exists" short-circuit — verified idempotent on a second `deploy` run)
 
 ### `deploy_to_agentcore_runtime(orchestrator_agent, guardrail_id, guardrail_version)` → runtime ARN
-- [ ] `agentcore_control.create_agent_runtime(...)`:
+- [x] `agentcore_control.create_agent_runtime(...)`:
       - `agentRuntimeName` = `runtime_name` (starter-computed), `description`, `roleArn=config.AGENTCORE_ROLE_ARN`
       - `networkConfiguration` → **PUBLIC**
       - `protocolConfiguration` → **MCP**
-      - `agentRuntimeArtifact` → the S3 zip already uploaded by starter (`bucket=config.POLICY_BUCKET`, key `artifact_key`), runtime `PYTHON_3_12`
+      - `agentRuntimeArtifact` → the S3 zip already uploaded by starter (`codeConfiguration.code.s3={bucket, prefix}`), runtime `PYTHON_3_12`, `entryPoint=['main.py']`
       - `environmentVariables`: `AWS_REGION`, `PROJECT_NAME`, `RETURNS_KB_ID`, `SHIPPING_KB_ID`, `WARRANTY_KB_ID`, `AGENT_LOG_GROUP`
       - guardrail is injected by the pre-written `before-call` hook — don't pass it explicitly
-- [ ] return `response.get('agentRuntimeArn', response.get('arn',''))`
+- [x] return `response.get('agentRuntimeArn', response.get('arn',''))`
 
 ### Deploy + record
-- [ ] `python src/agent_orchestrator.py deploy` (runs the 6-step pipeline)
-- [ ] Copy printed values into `.env`: `AGENTCORE_RUNTIME_ARN=`, `GUARDRAIL_ID=`, `GUARDRAIL_VERSION=`
+- [x] `python src/agent_orchestrator.py deploy` (runs the 6-step pipeline) — ran twice, second run confirmed idempotent (both guardrail and runtime reused, not recreated)
+- [x] Printed values copied into `.env`: `AGENTCORE_RUNTIME_ARN`, `GUARDRAIL_ID=mnsou98agg5p`, `GUARDRAIL_VERSION=1`
 
-### Milestone M4 — verification
-- Deploy command completes through Step 3/6 (and 4–6) without fatal error
-- `python tests/test_agent.py task3` → **20/20** (guardrail named `udacity-agentcore-guardrail` exists; has content + PII + topic policies; runtime ARN set)
+### Milestone M4 — verification ✅ PASSED (2026-09-12)
+- Deploy command completed through all 6 steps without fatal error (Step 6/6 Gateway also deployed — pre-written bonus feature, not part of the graded rubric, but a real resource — see §16 teardown update)
+- `python tests/test_agent.py task3` → **20/20** — guardrail exists with content + PII + topic policies; runtime ARN set
+- Live-verified via `get-guardrail`: exact policy match to the rubric (SEXUAL/VIOLENCE/HATE=HIGH, INSULTS/MISCONDUCT=MEDIUM, PII BLOCK/ANONYMIZE split, 3 denied topics, PROFANITY word list, version `1` ≠ DRAFT)
+- Live-verified via `get-agent-runtime`: `networkMode=PUBLIC`, `serverProtocol=MCP`, all 6 env vars present including the real KB IDs from Task 5
 
-### Evidence to collect
-- **E4.1** Terminal capture: full `python src/agent_orchestrator.py deploy` output (all 6 steps, final ARN + guardrail id/version block)
-- **E4.2** Console screenshot: Bedrock → Guardrails → `udacity-agentcore-guardrail` detail — content filter strengths, PII entities (BLOCK/ANONYMIZE), denied topics, profanity on, **Version** ≠ DRAFT
-- **E4.3** Console screenshot: Bedrock AgentCore → Runtimes → the runtime showing `PUBLIC` network, `MCP` protocol, env vars
-- **E4.4** Terminal capture: `python tests/test_agent.py task3` = `20/20`
-- **E4.5** `.env` excerpt (`AGENTCORE_RUNTIME_ARN`, `GUARDRAIL_ID`, `GUARDRAIL_VERSION`)
+### Evidence collected → `docs/evidence/03-guardrail-runtime/`
+- **E4.1** ✅ `E4.1-deploy-output.txt` — full `deploy` output, all 6 steps (second, idempotent run — both guardrail and runtime correctly reused rather than recreated)
+- **E4.2** ✅ `E4.2-guardrail-detail.txt` — `aws bedrock get-guardrail` output: content filter strengths, PII entities, denied topics, profanity, version `1` (CLI capture in lieu of console screenshot)
+- **E4.3** ✅ `E4.3-runtime-detail.txt` — `aws bedrock-agentcore-control get-agent-runtime` output: `PUBLIC`/`MCP`, all env vars
+- **E4.4** ✅ `E4.4-task3-score.txt` — `20/20`
+- **E4.5** ✅ `E4.5-env-runtime-guardrail.txt` — `.env` excerpt
 - **E4.6 (stretch, rubric "stand out")** adversarial probes vs the guardrail — prompt injection, competitor mention, legal threat — with blocked-response screenshots
 
 ---
@@ -491,6 +496,10 @@ so nothing is left running by accident.
 | Bedrock Knowledge Base | `novamart-shipping-policy-kb` (`HNTEB2KQRZ`) | same |
 | Bedrock Knowledge Base | `novamart-warranty-policy-kb` (`ATZZEIJG1P`) | same |
 | KB data source ×3 | `novamart-{returns,shipping,warranty}-s3-source` (one per KB above, pointing at the matching `policies/*/` prefix) | `aws bedrock-agent create-data-source`, 2026-09-12 |
+| Bedrock Guardrail | `udacity-agentcore-guardrail` (id `mnsou98agg5p`, version `1`) | `create_guardrail()` via `deploy`, 2026-09-12 |
+| AgentCore Runtime | `udacity_agentcore_runtime` (`arn:aws:bedrock-agentcore:us-east-1:187021010483:runtime/udacity_agentcore_runtime-fh9FZwA4FY`) | `deploy_to_agentcore_runtime()` via `deploy`, 2026-09-12 |
+| Runtime artifact | `s3://udacity-agentcore-policy-docs-187021010483-3153d8d0/agentcore-artifacts/udacity_agentcore_runtime/deployment.zip` (small placeholder zip; removed when the policy-docs bucket is emptied in teardown step 1) | same |
+| **AgentCore Gateway** | `novamart-support-3153d8d0` (id `novamart-support-3153d8d0-aypt2f6im2`) — pre-written Step 6/6 of `deploy_all()`, not part of the graded rubric, but a **real resource** | `deploy_agentcore_gateway()` via `deploy`, 2026-09-12 (its 3 Lambda targets failed to register — no Lambda functions deployed — so the gateway itself exists but has no working targets) |
 
 > Note: the CFN template's `VectorStoreBucket` (plain S3) is **not** used by these KBs — S3 Vectors
 > "vector buckets" are a separate resource type/ARN namespace from regular S3 buckets, so a real
@@ -498,7 +507,6 @@ so nothing is left running by accident.
 > to leave (removed automatically when the CFN stack is deleted) but not part of the KB teardown below.
 
 ### Not yet created (will be added as later tasks land — update this table when they are)
-- Task 3: Bedrock Guardrail (`udacity-agentcore-guardrail`), AgentCore Runtime
 - Task 4: AgentCore Memory resource
 
 ### Teardown procedure (run when the project is fully done, or to pause and stop billing)
@@ -530,9 +538,12 @@ for IDX in returns-index shipping-index warranty-index; do
 done
 aws s3vectors delete-vector-bucket --vector-bucket-name "$VB" --region us-east-1
 
-# 4. If Task 3/4 resources exist, delete the AgentCore Runtime, Guardrail, and Memory resource
-#    (console, or bedrock-agentcore-control / bedrock delete-* calls) before the stack delete —
-#    they are NOT part of the CFN stack and won't be removed by it.
+# 4. Delete the AgentCore Gateway, Runtime, Memory resource (if Task 4 lands), and Guardrail —
+#    NONE of these are part of the CFN stack and won't be removed by it.
+aws bedrock-agentcore-control delete-gateway --gateway-identifier novamart-support-3153d8d0-aypt2f6im2 --region us-east-1
+aws bedrock-agentcore-control delete-agent-runtime --agent-runtime-id udacity_agentcore_runtime-fh9FZwA4FY --region us-east-1
+# aws bedrock-agentcore-control delete-memory --memory-id <id> --region us-east-1   # once Task 4 creates one
+aws bedrock delete-guardrail --guardrail-identifier mnsou98agg5p --region us-east-1
 
 # 5. Delete the CloudFormation stack (removes DynamoDB tables, both plain S3 buckets, IAM role, log group)
 aws cloudformation delete-stack --stack-name udacity-agentcore --region us-east-1
