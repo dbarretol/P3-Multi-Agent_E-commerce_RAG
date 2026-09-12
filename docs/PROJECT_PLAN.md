@@ -103,23 +103,23 @@
       Optional: `uv init --bare` here to get a `pyproject.toml` + `uv.lock` for reproducibility (does not conflict with the graded files).
 - [x] **0.2** Personal-account permanent creds in root `.env`; identity confirmed → `arn:aws:iam::187021010483:user/udacity-agentcore-dev`
 - [x] **0.3** Bedrock model access — ✅ **RESOLVED** on the personal account (L11). Haiku 4.5, Sonnet 4.5, and Titan Embed v2 all invoke OK in `us-east-1`; first `Converse` call auto-subscribed via AWS Marketplace in the background (the `AdministratorAccess` identity has `aws-marketplace:Subscribe`, unlike the Academy `voclabs` role). Re-confirmed with a full pre-flight sweep 2026-09-12.
-- [ ] **0.4** Foundation infra — **pending (re-)deploy on the new account**: `aws cloudformation deploy … --stack-name udacity-agentcore --capabilities CAPABILITY_NAMED_IAM` → confirmed via sweep on 2026-09-12 that the stack does **not** exist yet on `187021010483` (`ValidationError: Stack ... does not exist`). Then `PYTHONUTF8=1 … seed_data.py`.
+- [x] **0.4** Foundation infra — ✅ **deployed 2026-09-12** on the personal account (`187021010483`): `aws cloudformation deploy --template-file infrastructure/starter_stack.yaml --stack-name udacity-agentcore --capabilities CAPABILITY_NAMED_IAM --region us-east-1` → `CREATE_COMPLETE`. Then `PYTHONUTF8=1 uv run python infrastructure/seed_data.py` → 4 customers, 15 orders, 6 policy docs.
 - [x] **0.5** `.env` keys present (creds + region + project filled; KB/runtime/guardrail keys still blank as expected)
-- [ ] **0.6** `PYTHONUTF8=1 uv run python config.py` — pending re-run once 0.4 lands (needs the CloudFormation exports from the new stack)
+- [x] **0.6** `PYTHONUTF8=1 uv run python config.py` — ✅ run 2026-09-12, all 5 CloudFormation-sourced rows populated against the new stack
 
-### Milestone M0 — verification (model access ✅ / infra pending re-deploy on new account)
-- Bedrock: `us.anthropic.claude-{haiku,sonnet}-4-5` → **invoke OK** on `187021010483` / `udacity-agentcore-dev`. Titan Embed v2 ✅. Confirmed twice (2026-09-09 initial, 2026-09-12 full pre-flight sweep).
-- Stack/DynamoDB/S3 checks below are **stale — from the old, now-deleted Academy-account stack**. Re-run 0.4/0.6 on the new account and re-collect E0.1/E0.2/E0.4/E0.5 before considering M0 fully passed:
-  - ~~Stack status → `CREATE_COMPLETE`; exports: OrdersTable, CustomersTable, WorkflowStateTable, PolicyBucket (`…-policy-docs-303688964032-8e6c6ea0`), VectorBucket (`…-vectors-303688964032-8e6c6ea0`), AgentCoreRoleArn (`arn:aws:iam::303688964032:role/udacity-agentcore-agentcore-role`), AgentLogGroup (`/aws/bedrock/agentcore/udacity-agentcore`)~~ (old account, deleted)
-  - ~~`config.py` table: all 5 CloudFormation rows populated~~ (needs re-run against new stack)
-  - ~~DynamoDB scan COUNT: customers = 4, orders = 15~~ / ~~S3: 6 policy-doc objects~~ (needs re-seed on new account)
+### Milestone M0 — verification ✅ PASSED (2026-09-12, personal account)
+- Bedrock: `us.anthropic.claude-{haiku,sonnet}-4-5` → **invoke OK** on `187021010483` / `udacity-agentcore-dev`. Titan Embed v2 ✅.
+- Stack status → `CREATE_COMPLETE`; exports: OrdersTable (`udacity-agentcore-orders`), CustomersTable (`udacity-agentcore-customers`), WorkflowStateTable (`udacity-agentcore-workflow-state`), PolicyBucket (`udacity-agentcore-policy-docs-187021010483-3153d8d0`), VectorBucket (`udacity-agentcore-vectors-187021010483-3153d8d0`), AgentCoreRoleArn (`arn:aws:iam::187021010483:role/udacity-agentcore-agentcore-role`), AgentLogGroup (`/aws/bedrock/agentcore/udacity-agentcore`).
+- `config.py` table: all 5 CloudFormation rows populated.
+- DynamoDB scan COUNT: customers = 4, orders = 15. S3: 6 policy-doc objects across `policies/returns|shipping|warranty/`.
+- ⚠️ **These are new, billable AWS resources on the personal account.** See **§16 — Active AWS resources / teardown checklist** before considering this project finished.
 
 ### Evidence collected → `docs/evidence/00-setup/`
-- **E0.1** ⚠️ stale (old account) — re-collect `identity-and-stack.txt` after 0.4 redeploy
-- **E0.2** ⚠️ stale (old account) — re-collect `config-py-output.txt` after 0.6 re-run
+- **E0.1** ✅ `identity-and-stack.txt` — re-collected 2026-09-12 against the new stack/account
+- **E0.2** ✅ `config-py-output.txt` — re-collected 2026-09-12
 - **E0.3** ✅ `bedrock-model-access.txt` — live invoke results for the 3 models, valid on the current (personal) account
-- **E0.4** ⚠️ stale (old account) — re-collect `s3-policy-docs.txt` after re-seed
-- **E0.5** ⚠️ stale (old account) — re-collect `dynamodb-counts.txt` after re-seed
+- **E0.4** ✅ `s3-policy-docs.txt` — re-collected 2026-09-12
+- **E0.5** ✅ `dynamodb-counts.txt` — re-collected 2026-09-12 (customers=4, orders=15)
 
 ---
 
