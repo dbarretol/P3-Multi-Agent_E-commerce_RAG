@@ -433,4 +433,11 @@ Rationale: KBs (M3) must exist before deploy (M4) so the runtime env vars carry 
 - [ ] `.env` has all 6 task-populated values
 - [ ] `git diff` touches only `src/agent_orchestrator.py`
 - [ ] X-Ray Service Map screenshot shows Orchestrator → ≥1 worker
+- [ ] **Industry Best Practices pass** (rubric category, not covered by `test_agent.py`): every tool function has a docstring (purpose/params/return); every `build_*_agent()` returns exactly one `Agent`; names are `snake_case`/descriptive; no hardcoded model-ID strings anywhere — only `config.ORCHESTRATOR_MODEL_ID` / `config.WORKER_MODEL_ID`
 - [ ] Submission package assembled per Udacity classroom instructions
+
+---
+
+## 15. Starter-kit upstream parity
+
+Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-classroom` (`main`, no local git remote configured — checked via `gh api` + direct file diff): every starter file (`src/agent_orchestrator.py` incl. all TODOs, `agent_utils.py`, `bedrock_kb_retrieval.py`, `demo.py`, `config.py`, `tests/test_agent.py`, `infrastructure/*`, `requirements.txt`, `.env.example`, `README.md`) is **byte-identical** to upstream. Latest upstream commit touching `project/starter` is `4eeecb3` (2026-05-29) — already present locally. No newer scaffolding, fixes, or TODO changes exist upstream that this working copy is missing. See `lessons_learned.md` **L12** for the full check.

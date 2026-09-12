@@ -369,15 +369,30 @@ multi-agent runs**; the SDK retries with backoff, or request an increase to ~50�
 
 ---
 
-## Environment facts (this run)
+## L12 — ✅ Verified (2026-09-12): local starter kit is byte-identical to upstream `main`
+
+Ran a full diff of every graded/non-graded starter file against `raw.githubusercontent.com/udacity/cd14764-aws-agentic-c3-classroom/main/project/starter/...` (fetched via `gh api` + `curl`, no local git remote is configured for this working copy):
+
+- **Identical:** `src/agent_orchestrator.py` (1230/1230 lines, 0 diff), `src/agent_utils.py`, `src/bedrock_kb_retrieval.py`, `src/demo.py`, `config.py`, `tests/test_agent.py`, `infrastructure/starter_stack.yaml`, `infrastructure/seed_data.py`, `requirements.txt`, `.env.example` (root-level copy), `README.md`.
+- No newer commit exists upstream that we're missing — latest commit touching `project/starter` is `4eeecb3` (2026-05-29, "fix aws validation constraints": `runtime_name` hyphens → underscores for AgentCore naming validation), and our local `agent_orchestrator.py` already has that exact fix at line 676.
+- Repo `pushed_at` = 2026-06-14 (last real push); `updated_at` = 2026-09-06 is just GitHub metadata (stars/description/etc.), not a code change.
+- **Conclusion:** the TODOs in `agent_orchestrator.py` are exactly as Udacity shipped them — nothing to re-pull, no upstream fix or scaffolding change was missed. All remaining work is implementation (Task 2) and infra/deploy (Tasks 3–6), not a stale starter kit.
+
+---
+
+## Environment facts (current)
 
 | | |
 |---|---|
 | Mode | Local Windows 11, Git Bash + PowerShell, `uv` |
-| AWS account | `303688964032` — AWS Academy learner lab (`voclabs` role) |
+| AWS account | `187021010483` (personal), IAM user `udacity-agentcore-dev`, `AdministratorAccess`, permanent key (no session token) — see [[L11]] |
 | Region | us-east-1 |
-| Repo | full clone of `udacity/cd14764-aws-agentic-c3-classroom` at repo root; work in `project/starter/` |
+| Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`; no git remote configured (starter files verified against upstream via `gh api`/`curl`, see L12) |
 | `.env` | repo root, gitignored |
-| Stack | `udacity-agentcore` deployed by us (not pre-provisioned) → `CREATE_COMPLETE` |
-| Data | 4 customers, 15 orders, 6 S3 policy docs seeded |
-| **Status** | **Blocked at Phase 0 / M0 step 0.3** — Bedrock Claude access (L7). Everything else green. |
+| Stack | `udacity-agentcore` — **not yet (re-)deployed** on this account (old Academy-account stack was torn down, L9) |
+| Data | not yet re-seeded on this account |
+| **Status** | Phase 0 unblocked (model access resolved, L11). Next action: redeploy CFN stack + re-seed, then start Task 2. |
+
+> Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
+> "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
+> and L11 account switch. Kept the correction here rather than silently rewriting history.
