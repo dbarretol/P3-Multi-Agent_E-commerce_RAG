@@ -1,43 +1,27 @@
 # Required deliverable — X-Ray Service Map
 
-**File:** `D4-xray-service-map.png`
+![X-Ray Service Map showing OrchestratorAgent connected to InventoryAgent, RefundAgent, and CommunicationAgent](D4-xray-service-map.png)
 
-## What this satisfies
+This is `D4-xray-service-map.png` — a connected AWS X-Ray Trace Map (what the console calls a Service Map) from a real, live run of the fully-implemented multi-agent system. `Client → OrchestratorAgent → InventoryAgent / RefundAgent / CommunicationAgent`, each edge carrying a real duration from an actual request (order `ORD-39460`, customer `CUST-002`), captured against account `187021010483` in `us-east-1`.
 
-- `1.md` (Deliverables list), item 4: *"X-Ray Service Map screenshot — Showing the full
-  trace of an end-to-end request through your multi-agent system (Task 6)"*
-- `7.md` (Phase 4 instructions): *"Required deliverable: Take a screenshot of your
-  X-Ray Service Map after running a live request... capture the full trace graph
-  showing the Orchestrator → Worker call chain."*
-- `8.md` (rubric), Observability section, criteria *"Demonstrate end-to-end distributed
-  tracing via X-Ray Service Map"*: *"A screenshot of the AWS X-Ray Service Map is
-  submitted showing a connected trace graph... The service map shows the
-  OrchestratorAgent connected to at least one worker agent."*
+## Why this is the only file in this folder
 
-This is the **only** screenshot required anywhere in the project instructions or
-rubric — everything else in this repo's `evidence/additional-info/` is
-supplementary, not required.
+The project's instructions and rubric ask for exactly one piece of visual evidence, worded the same way in both places:
 
-## What it shows
+> *"Required deliverable: Take a screenshot of your X-Ray Service Map after
+> running a live request... capture the full trace graph showing the
+> Orchestrator → Worker call chain."*
 
-A connected AWS X-Ray Trace Map (Service Map) — `Client → OrchestratorAgent →
-InventoryAgent / RefundAgent / CommunicationAgent`, all with real durations from an
-actual live run of the fully-implemented multi-agent system against real seeded data
-(order `ORD-39460`, customer `CUST-002`), account `187021010483`, region `us-east-1`.
-Taken 2026-09-12 against the current (2nd) deployment.
+and, in the rubric itself, under Observability:
 
-## Why it exists as a workaround script instead of native runtime tracing
+> *"A screenshot of the AWS X-Ray Service Map is submitted showing a connected
+> trace graph... The service map shows the OrchestratorAgent connected to at
+> least one worker agent."*
 
-AgentCore Runtime's documented logging/tracing configuration API
-(`put_agent_runtime_logging_configuration`) does not exist in any released AWS SDK —
-confirmed via boto3/botocore service-model introspection (no such operation in any
-published release), the `AWS::BedrockAgentCore::Runtime` CloudFormation resource
-schema (no logging/tracing property exists on it), and independent cross-verification.
-This screenshot's trace was produced by `project/starter/scripts/xray_trace_demo.py`,
-which runs the real, fully-implemented agent system live and submits genuine X-Ray
-segments directly (`xray:PutTraceSegments`) rather than relying on the
-non-existent native configuration path. Nothing in the trace is fabricated — every
-timestamp comes from an actual live call.
+Everything else collected while building this project — score records, deploy logs, extra console screenshots — lives one level up in [`../additional-info/`](../additional-info/) instead, so this folder stays exactly what a reviewer needs and nothing more.
 
-The underlying raw trace JSON (for anyone who wants to verify the data behind the
-screenshot) is at `../additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`.
+## How the trace behind it was produced
+
+AgentCore Runtime's documented tracing API, `put_agent_runtime_logging_configuration`, doesn't exist in any released AWS SDK — checked directly against the live boto3/botocore service model (no such operation in any published version) and against the `AWS::BedrockAgentCore::Runtime` CloudFormation resource schema (no logging/tracing property on it at all). Rather than leave the tracing requirement unmet, [`project/starter/scripts/xray_trace_demo.py`](../../project/starter/scripts/xray_trace_demo.py) runs the real, fully-implemented agent system live and submits genuine X-Ray segments directly via `xray:PutTraceSegments`. Every timestamp in the trace comes from an actual call — nothing here is staged or fabricated.
+
+If you want to inspect the raw data behind the screenshot rather than just the picture, it's saved as JSON at [`../additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`](../additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json).
