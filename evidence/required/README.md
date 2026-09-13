@@ -15,7 +15,7 @@
   OrchestratorAgent connected to at least one worker agent."*
 
 This is the **only** screenshot required anywhere in the project instructions or
-rubric — everything else in this repo's `docs/evidence/additional-info/` is
+rubric — everything else in this repo's `evidence/additional-info/` is
 supplementary, not required.
 
 ## What it shows

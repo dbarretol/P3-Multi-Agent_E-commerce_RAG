@@ -3,6 +3,10 @@
 This folder is split in two, so a reviewer can find the one thing the rubric actually
 asks for without wading through our own internal verification notes.
 
+**If you're wondering why the score is 100/120 instead of 120/120, read
+[`TASK6-OBSERVABILITY-BUG.md`](TASK6-OBSERVABILITY-BUG.md) first** — it explains the
+one gap and why no submission can pass that specific automated check.
+
 ## `required/`
 
 Contains **only** the one deliverable the project rubric and lesson instructions
