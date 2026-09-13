@@ -1,0 +1,41 @@
+
+============================================================
+  Deploying Enterprise Multi-Agent System
+============================================================
+
+Step 1/6: Building agent graph...
+  All 5 agents initialized
+
+Step 2/6: Creating Bedrock Guardrail...
+Guardrail already exists: mnsou98agg5p (version: 1)
+
+Step 3/6: Deploying to AgentCore Runtime...
+AgentCore Runtime already exists: arn:aws:bedrock-agentcore:us-east-1:187021010483:runtime/udacity_agentcore_runtime-fh9FZwA4FY
+
+Step 4/6: Configuring Memory...
+AgentCore Memory already exists: arn:aws:bedrock-agentcore:us-east-1:187021010483:memory/udacity_agentcore_memory-yX3G4HDqFe
+
+Step 5/6: Configuring Observability...
+
+Step 6/6: Deploying AgentCore Gateway...
+  Calling create_gateway (name: novamart-support-3153d8d0)...
+    Gateway 'novamart-support-3153d8d0' already exists — reusing it.
+    Gateway ID  : novamart-support-3153d8d0-aypt2f6im2
+    Gateway URL : https://novamart-support-3153d8d0-aypt2f6im2.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp
+
+  Registering 3 Gateway targets...
+    [Skipped] orders-api: An error occurred (ResourceNotFoundException) when calling the GetFunction operation: Function not found: arn:aws:lambda:us-east-1:187021010483:function:udacity-agentcore-orders-api
+    [Skipped] policy-api: An error occurred (ResourceNotFoundException) when calling the GetFunction operation: Function not found: arn:aws:lambda:us-east-1:187021010483:function:udacity-agentcore-policy-api
+    [Skipped] customers-api: An error occurred (ResourceNotFoundException) when calling the GetFunction operation: Function not found: arn:aws:lambda:us-east-1:187021010483:function:udacity-agentcore-customers-api
+  Gateway URL : https://novamart-support-3153d8d0-aypt2f6im2.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp
+  Agents connect via MCP at this endpoint — no code changes needed
+
+============================================================
+  Deployment Complete!
+============================================================
+
+  Add these to your .env file:
+  AGENTCORE_RUNTIME_ARN=arn:aws:bedrock-agentcore:us-east-1:187021010483:runtime/udacity_agentcore_runtime-fh9FZwA4FY
+  GUARDRAIL_ID=mnsou98agg5p
+  GUARDRAIL_VERSION=1
+

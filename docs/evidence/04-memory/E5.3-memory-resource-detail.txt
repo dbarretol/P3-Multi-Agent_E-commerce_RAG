@@ -1,0 +1,30 @@
+{
+    "memory": {
+        "arn": "arn:aws:bedrock-agentcore:us-east-1:187021010483:memory/udacity_agentcore_memory-yX3G4HDqFe",
+        "id": "udacity_agentcore_memory-yX3G4HDqFe",
+        "name": "udacity_agentcore_memory",
+        "description": "NovaMart session-scoped conversational memory - rolling summary so returning customers do not need to repeat themselves.",
+        "memoryExecutionRoleArn": "arn:aws:iam::187021010483:role/udacity-agentcore-agentcore-role",
+        "eventExpiryDuration": 7,
+        "status": "ACTIVE",
+        "createdAt": "2026-09-12T19:00:35.729000-05:00",
+        "updatedAt": "2026-09-12T19:00:36.203000-05:00",
+        "strategies": [
+            {
+                "strategyId": "session_summary-eazP7FBdIw",
+                "name": "session_summary",
+                "description": "Rolling summary of the customer conversation for this session",
+                "type": "SUMMARIZATION",
+                "namespaces": [
+                    "/summaries/{sessionId}"
+                ],
+                "namespaceTemplates": [
+                    "/summaries/{sessionId}"
+                ],
+                "createdAt": "2026-09-12T19:00:35.729000-05:00",
+                "updatedAt": "2026-09-12T19:00:36.203000-05:00",
+                "status": "ACTIVE"
+            }
+        ]
+    }
+}
