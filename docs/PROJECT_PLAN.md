@@ -114,7 +114,7 @@
 - DynamoDB scan COUNT: customers = 4, orders = 15. S3: 6 policy-doc objects across `policies/returns|shipping|warranty/`.
 - ⚠️ **These are new, billable AWS resources on the personal account.** See **§16 — Active AWS resources / teardown checklist** before considering this project finished.
 
-### Evidence collected → `docs/evidence/00-setup/`
+### Evidence collected → `docs/evidence/additional-info/00-setup/`
 - **E0.1** ✅ `identity-and-stack.txt` — re-collected 2026-09-12 against the new stack/account
 - **E0.2** ✅ `config-py-output.txt` — re-collected 2026-09-12
 - **E0.3** ✅ `bedrock-model-access.txt` — live invoke results for the 3 models, valid on the current (personal) account
@@ -214,7 +214,7 @@
 - Policy scenario's *content* is necessarily generic until Task 5's KBs exist — parallel-dispatch
   mechanics are fully proven now.
 
-### Evidence collected → `docs/evidence/02-agents/`
+### Evidence collected → `docs/evidence/additional-info/02-agents/`
 - **E2.1** ✅ `E2.1-task2-score.txt` — `Score: 40/40 pts (100%)`
 - **E2.2** ✅ `E2.2-full-refund-chain-trace.txt` — full Orchestrator → Inventory → Refund → Communication trace against real order `ORD-91987`
 - **E2.3** ✅ `E2.3-three-scenarios.txt` — `agent_orchestrator.py test`, all 3 canonical scenarios
@@ -252,7 +252,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
   expedited shipping, 3-year electronics warranty, $500/20-order tier thresholds) — parallel dispatch and
   synthesis both confirmed working against live KBs, not just the earlier empty-KB graceful-degradation path.
 
-### Evidence collected → `docs/evidence/05-kb/`
+### Evidence collected → `docs/evidence/additional-info/05-kb/`
 - **E3.1** ✅ `E3.1-kb-list-status.txt` — all 3 KBs `ACTIVE`, correct embedding model + S3_VECTORS storage + index name (CLI capture in lieu of console screenshot)
 - **E3.2** ✅ `E3.2-sync-history.txt` — all 3 ingestion jobs `COMPLETE`, 2 docs indexed / 0 failed each
 - **E3.3** ✅ `E3.3-task5-score.txt` — `25/25`
@@ -299,7 +299,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 - Live-verified via `get-guardrail`: exact policy match to the rubric (SEXUAL/VIOLENCE/HATE=HIGH, INSULTS/MISCONDUCT=MEDIUM, PII BLOCK/ANONYMIZE split, 3 denied topics, PROFANITY word list, version `1` ≠ DRAFT)
 - Live-verified via `get-agent-runtime`: `networkMode=PUBLIC`, `serverProtocol=MCP`, all 6 env vars present including the real KB IDs from Task 5
 
-### Evidence collected → `docs/evidence/03-guardrail-runtime/`
+### Evidence collected → `docs/evidence/additional-info/03-guardrail-runtime/`
 - **E4.1** ✅ `E4.1-deploy-output.txt` — full `deploy` output, all 6 steps (second, idempotent run — both guardrail and runtime correctly reused rather than recreated)
 - **E4.2** ✅ `E4.2-guardrail-detail.txt` — `aws bedrock get-guardrail` output: content filter strengths, PII entities, denied topics, profanity, version `1` (CLI capture in lieu of console screenshot)
 - **E4.3** ✅ `E4.3-runtime-detail.txt` — `aws bedrock-agentcore-control get-agent-runtime` output: `PUBLIC`/`MCP`, all env vars
@@ -340,7 +340,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 - Live-verified via `get-memory`: `status=ACTIVE`, strategy `session_summary` type `SUMMARIZATION` status `ACTIVE`, `eventExpiryDuration=7`
 - Took ~90s from `CREATING` to `ACTIVE` after `create_memory()` returned — real backend provisioning delay, not an error
 
-### Evidence collected → `docs/evidence/04-memory/`
+### Evidence collected → `docs/evidence/additional-info/04-memory/`
 - **E5.1** ✅ `E5.1-task4-score-within-all.txt` — Task 4 section = `15/15` (from a full `test_agent.py all` run)
 - **E5.2** ✅ `E5.2-deploy-step4-memory.txt` — deploy pipeline "Step 4/6: Configuring Memory…" line + memory ARN (idempotent re-run, correctly reused)
 - **E5.3** ✅ `E5.3-memory-resource-detail.txt` — `aws bedrock-agentcore-control get-memory` full detail: `SUMMARIZATION` strategy + 7-day expiry (CLI capture in lieu of console screenshot)
@@ -372,7 +372,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 ### Milestone M6 — verification
 `python tests/test_agent.py task6` → **0/20 in this environment** (see status note above) — code itself is correct/complete per spec
 
-### Evidence collected → `docs/evidence/06-observability/`
+### Evidence collected → `docs/evidence/additional-info/06-observability/`
 - **E6.1** `E6.1-task6-result.txt` — shows the exact `AttributeError` proving the API gap, not a code defect
 - **E6.2** `E6.2-deploy-step5-observability.txt` — deploy pipeline's graceful `[Note] Logging config skipped (SDK version mismatch)` message, exactly as the TODO instructed
 
@@ -400,7 +400,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
   externally-confirmed SDK/API gap, not an implementation defect — the X-Ray deliverable above was
   produced via a separate, legitimate workaround rather than by that missing API)
 
-### Evidence collected → `docs/evidence/07-e2e/`
+### Evidence collected → `docs/evidence/additional-info/07-e2e/`
 - **E7.1** ✅ `E7.1-final-deploy.txt` — final `deploy` run, all 6 steps (idempotent)
 - **E7.2** ✅ `E7.2-three-scenarios-routing.txt` — `agent_orchestrator.py test`, all 3 scenarios
 - **E7.3** ✅ **D4 ACHIEVED** — `E7.3-xray-service-graph-CONNECTED.json`: the real X-Ray service graph
@@ -451,7 +451,12 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 | E7.5 | completed `agent_orchestrator.py` | file | D1 | ✅ |
 | E7.6 | final `.env` (redacted) | text | D3 | ✅ |
 
-> Suggested storage: `docs/evidence/` with subfolders `00-setup/ 02-agents/ 05-kb/ 03-guardrail-runtime/ 04-memory/ 06-observability/ 07-e2e/`. Name files `E<id>-<slug>.png|txt`.
+> **Reorganized 2026-09-13** (see [[L24]]): `docs/evidence/` is now split into
+> `required/` (the single rubric-mandated X-Ray Service Map screenshot, D4 — nothing
+> else) and `additional-info/` (everything below — all of `00-setup/ 02-agents/ 05-kb/
+> 03-guardrail-runtime/ 04-memory/ 06-observability/ 07-e2e/` plus supplementary
+> console screenshots). None of the `additional-info/` content is required by the
+> rubric; it's our own audit trail. See `docs/evidence/README.md`.
 
 ---
 
@@ -655,7 +660,7 @@ After redeploying, do these **in order**, before calling the project done again:
    guardrail ID (the old ones are stale and must not be reused in evidence or screenshots).
    **Done 2026-09-12, see [[L23]]** — fresh IDs are in the "Currently created" table above and in `.env`.
 2. ✅ **Re-run `scripts/xray_trace_demo.py`** against the fresh resources to regenerate the D4 evidence
-   (`docs/evidence/07-e2e/E7.3-xray-service-graph-CONNECTED.json`) — the old one references now-deleted
+   (`docs/evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`) — the old one references now-deleted
    resource IDs and would look inconsistent next to the new `.env` if submitted as-is.
    **Done 2026-09-12, see [[L23]]** — regenerated against a real seeded order (`ORD-39460`), verified via
    `batch-get-traces` (correctly nested `remote` subsegments) and `get-service-graph` (5 connected nodes:
