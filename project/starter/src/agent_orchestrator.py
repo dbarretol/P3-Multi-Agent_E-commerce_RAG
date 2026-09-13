@@ -1084,14 +1084,28 @@ def configure_memory(runtime_arn: str) -> str:
             print(f"AgentCore Memory already exists: {memory_arn}")
             return memory_arn
 
-    # TODO: Create AgentCore Memory
-    # Use agentcore_control.create_memory() with:
-    #   - name (memory_name), description
-    #   - eventExpiryDuration (7 days)
-    #   - memoryStrategies with summaryMemoryStrategy
-    #   - clientToken for idempotency
-
-    pass
+    response = agentcore_control.create_memory(
+        name=memory_name,
+        description=(
+            'NovaMart session-scoped conversational memory - rolling summary '
+            'so returning customers do not need to repeat themselves.'
+        ),
+        eventExpiryDuration=7,
+        memoryExecutionRoleArn=config.AGENTCORE_ROLE_ARN,
+        memoryStrategies=[
+            {
+                'summaryMemoryStrategy': {
+                    'name':        'session_summary',
+                    'description': 'Rolling summary of the customer conversation for this session',
+                    'namespaces':  ['/summaries/{sessionId}'],
+                }
+            }
+        ],
+        clientToken=memory_name,
+    )
+    memory_arn = response['memory']['arn']
+    print(f"AgentCore Memory created: {memory_arn}")
+    return memory_arn
 
 
 # ═══════════════════════════════════════════════════════
