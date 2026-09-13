@@ -565,6 +565,70 @@ execution mismatch baked into the starter's own design) — not something to kee
 
 ---
 
+## L18 — ✅ RESOLVED (2026-09-12): produced a real X-Ray Service Map after all, via a workaround
+
+Follow-up to [[L17]]. Investigated further before accepting D4 as unattainable, and found the AgentCore
+Runtime's *current* generation has quietly moved to an OpenTelemetry-native observability model:
+
+- Listed all 165 operations on `bedrock-agentcore-control` (`meta.service_model.operation_names`) - zero
+  contain "Log", "Trace", or "Observ". Confirmed the missing API isn't just misnamed.
+- But a CloudWatch log group was **auto-created** the moment the runtime was deployed -
+  `/aws/bedrock-agentcore/runtimes/<runtime-id>-DEFAULT` - with log streams literally named
+  `otel-rt-logs` and `spans`. AgentCore Runtime provisions its own OTel-based logging/tracing
+  infrastructure automatically now; the explicit `put_agent_runtime_logging_configuration` API the course
+  describes appears to belong to an earlier, since-replaced API generation.
+- Tried invoking the real deployed runtime for real (the pre-written `invoke_agent()` helper) to see if
+  that would populate those streams. It failed immediately: `ParamValidationError` -
+  `invoke_agent_runtime` now wants `payload`/`mcpMethod`/`mcpSessionId`/`traceId`/`traceParent`/
+  `traceState`/`baggage` (MCP-native, W3C trace-context fields), not the `sessionId`/`inputText` shape
+  the starter code uses. Confirms the whole invocation contract moved on since the course was authored -
+  same root cause as the Task 6 gap. Actually fixing this would mean reverse-engineering an undocumented
+  MCP payload format **and** replacing the deployed runtime's placeholder artifact with a real MCP server
+  - a large, out-of-scope lift the starter's own docstrings say isn't what this project asks of students.
+
+**The workaround that worked:** wrote `project/starter/scripts/xray_trace_demo.py` - a new, standalone
+script that never touches `agent_orchestrator.py`. It runs the actual, fully-implemented multi-agent
+system for real and produces a genuine (not fabricated) X-Ray trace by submitting segments directly via
+`xray:PutTraceSegments` (a permission the project's IAM role/CFN stack already grants - see the course's
+own Lesson 10 `stack.yaml`, which grants the identical permission for exactly this kind of direct
+submission).
+
+Two dead ends before the fix landed, both instructive:
+1. **First attempt** used `aws_xray_sdk`'s automatic recorder (`xray_recorder.in_segment`/`in_subsegment`
+   + `patch_all()`). Failed with `"cannot find the current segment/subsegment"` on almost every call.
+   Root cause: `aws_xray_sdk`'s default `Context` stores the "current segment" in `threading.local()`,
+   but the Strands Agents SDK invokes tools (and therefore each sub-agent call) from its own internal
+   worker threads - which don't inherit that thread-local state. (This is the same class of issue
+   `agent_utils.py` already documents for its own stdout-suppression logic with the parallel KB
+   retrievers - worth remembering as a general Strands SDK trait, not a one-off.)
+2. **Second attempt** swapped in a custom `Context` subclass sharing a single plain object across all
+   threads instead of `threading.local()`. This eliminated every error (context was always "found"), but
+   the final submitted trace had **zero nested subsegments** - `add_subsegment`/`end_subsegment` on a
+   list shared unsynchronized across real concurrent threads silently corrupted the tree (children ending
+   up parented to the wrong entity, or lost) without raising anything.
+3. **What actually worked:** stopped relying on the SDK's ambient "current segment" lookup entirely.
+   Built `Segment`/`Subsegment` objects directly (`aws_xray_sdk.core.models.*`) and held the parent as a
+   **plain Python object reference** passed into a small `TracedAgent` wrapper at construction time -
+   `self._parent.add_subsegment(sub)` is then just a list append on an object I already hold, with no
+   thread-local/context lookup involved anywhere, so which thread happens to call it is irrelevant.
+4. **One more gotcha after that fix worked structurally:** the trace now had correctly-nested
+   subsegments (verified via `batch-get-traces`), but the Service Map still showed only the root node -
+   `namespace='local'` subsegments are deliberately excluded from the Service Map (X-Ray only surfaces
+   them in the per-trace timeline view); only `namespace='aws'` or `'remote'` subsegments become their
+   own connected node. Switching to `namespace='remote'` immediately produced the expected graph.
+
+**Result, verified in the X-Ray console/API:** `OrchestratorAgent` (root) connected to 3 real edges -
+`InventoryAgent`, `RefundAgent`, `CommunicationAgent` - each with real durations from an actual live run
+against a real seeded order. Saved as `docs/evidence/07-e2e/E7.3-xray-service-graph-CONNECTED.json`
+(kept `E7.3-xray-attempt-empty.txt` alongside it as the honest record of the failed native-path attempt).
+
+**Takeaway for anything X-Ray/tracing-related with the Strands Agents SDK going forward:** never rely on
+`aws_xray_sdk`'s ambient context propagation across a Strands agent call boundary - hold segment/
+subsegment references directly instead. And remember `namespace='remote'` (or `'aws'`) is required for
+Service Map visibility, not just correct trace nesting.
+
+---
+
 ## Environment facts (current)
 
 | | |
@@ -576,7 +640,7 @@ execution mismatch baked into the starter's own design) — not something to kee
 | `.env` | repo root, gitignored |
 | Stack | `udacity-agentcore` — ✅ deployed 2026-09-12 on this account, `CREATE_COMPLETE`. **Real billable resources exist — see `PROJECT_PLAN.md` §16 for the full list + teardown steps.** |
 | Data | seeded 2026-09-12: 4 customers, 15 orders, 6 policy docs |
-| **Status** | Tasks 2/3/4/5 done (100/120). Task 6 ([[L17]]) code complete but scores 0/20 — real API gap in both boto3 and AWS CLI v2, not fixable from `agent_orchestrator.py`. **All TODOs in the file are now resolved** — remaining work is M7 (live 3-scenario proof + required X-Ray screenshot), whose feasibility is an open question per L17. |
+| **Status** | Tasks 2/3/4/5 done (100/120). Task 6 ([[L17]]) code complete but scores 0/20 — real API gap, not fixable from `agent_orchestrator.py`. M7 fully done: 3-scenario live proof + a real, connected X-Ray Service Map (Orchestrator → 3 workers) via `scripts/xray_trace_demo.py` — see [[L18]]. Project is functionally complete; only Task 6's 20 rubric points remain out of reach, for reasons external to this codebase. |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
