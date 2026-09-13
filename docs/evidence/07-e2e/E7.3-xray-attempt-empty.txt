@@ -1,0 +1,10 @@
+=== X-Ray trace summaries (30 min window after test run) ===
+[]
+
+=== X-Ray service graph (same window) ===
+{
+    "Services": [],
+    "StartTime": null,
+    "EndTime": null,
+    "ContainsOldGroupVersions": false
+}
