@@ -632,6 +632,36 @@ resources, kept only as a historical record of what was built — see note above
 (Task 5) and X-Ray Service Map screenshot (M7/D4) both require manual AWS Console steps that the user
 will perform and screenshot themselves next session — see [[L14]] and [[L18]].
 
+### Resume checklist — cover Task 6 / D4 gaps as fully as possible (added 2026-09-12, see [[L20]])
+
+After redeploying, do these **in order**, before calling the project done again:
+
+1. **Redeploy everything** via the normal flow above; confirm `.env` has the fresh KB IDs / runtime ARN /
+   guardrail ID (the old ones are stale and must not be reused in evidence or screenshots).
+2. **Re-run `scripts/xray_trace_demo.py`** against the fresh resources to regenerate the D4 evidence
+   (`docs/evidence/07-e2e/E7.3-xray-service-graph-CONNECTED.json`) — the old one references now-deleted
+   resource IDs and would look inconsistent next to the new `.env` if submitted as-is.
+3. **Follow the course's literal screenshot sequence:** run `python src/agent_orchestrator.py test`
+   (the 3-scenario local test), then immediately re-run the X-Ray demo script if needed, then go to
+   **AWS Console → X-Ray → Service map** and take the **required D4 screenshot manually** (user does
+   this — no browser automation, per explicit instruction this session).
+4. **Enable two real, free console-only settings** — genuine infrastructure, doesn't change
+   `test_agent.py`'s score, but is honest completion of Task 6's intent and gives extra supporting
+   evidence if a human reviewer looks at the console directly:
+   - CloudWatch console → Settings → Account → **X-Ray traces** tab → enable **Transaction Search**
+     (one-time, account-level)
+   - AgentCore console → **Agent Runtime** → select the new runtime → **Tracing** pane → Edit → **Enable**
+     → Save
+   - Take a screenshot of the enabled Tracing toggle as supplementary Task 6 evidence.
+5. **File the course-bug report with Udacity** (mentor/Knowledge channel, or attached to the submission)
+   before or at resubmission time — this is the actual lever for getting the unreachable 20 points
+   reconsidered by a human reviewer, since the automated check can never pass for any student. Draft was
+   offered but not yet requested as of 2026-09-12 — ask the assistant to produce it when ready; it cites
+   the exact method name confirmed absent from ~2,500 botocore releases and AWS's own API docs, plus the
+   real console-only mechanism AWS actually shipped instead.
+6. **Do not** attempt to mock/monkeypatch the boto3 client so the test appears to pass — confirmed
+   dishonest and unnecessary; the correct path is the documented gap + bug report above.
+
 ---
 
 ## 17. Git workflow note (2026-09-12)

@@ -684,3 +684,31 @@ Three small, separate threads before pausing work:
    `PROJECT_PLAN.md` §16. On resume: re-run the full deploy flow to get fresh IDs, update `.env`, and the
    user will take the Task 5 KB-creation and M7 X-Ray-Service-Map screenshots manually in their own AWS
    Console session (not via browser automation - see the repeated redirect on that in this session).
+
+---
+
+## L20 — 2026-09-12: Resume-checklist for covering Task 6 / D4 as fully as possible after redeploy
+
+Following [[L19]]'s teardown, user asked what to actually do on the next redeploy to cover the Task 6 gap
+and the rubric as completely as possible. Turned the prior turn's recommendations into a concrete ordered
+checklist, now in `PROJECT_PLAN.md` §16 "Resume checklist":
+
+1. Redeploy via the normal flow, get fresh KB IDs/runtime ARN/guardrail ID into `.env`.
+2. Re-run `scripts/xray_trace_demo.py` against the *fresh* resources - the existing D4 evidence
+   (`E7.3-xray-service-graph-CONNECTED.json`) references resource IDs that no longer exist post-teardown,
+   so reusing it against a new `.env` would look inconsistent to a reviewer.
+3. Follow the course's literal screenshot sequence (`agent_orchestrator.py test` then Console → X-Ray →
+   Service map) so the screenshot moment matches what the assignment describes, even though the actual
+   trace comes from the workaround script rather than native runtime instrumentation.
+4. Enable two real, free, console-only settings as genuine supplementary evidence (doesn't move the
+   automated score, but is honest completion of Task 6's intent): CloudWatch Transaction Search
+   (account-level one-time toggle) and the Agent Runtime's own **Tracing** pane (Edit → Enable → Save) -
+   both confirmed real in [[L18]]'s investigation, both console-only (no backing API in
+   `bedrock-agentcore-control`).
+5. File a course-bug report with Udacity (mentor/Knowledge channel or submission notes) citing the
+   confirmed-absent method name, since that's the only lever that can actually move the unreachable 20
+   points - a human override, not more code. Offered to draft this text; not yet requested.
+6. Explicit reminder not to mock/monkeypatch the boto3 client to fake a pass - stays a hard no.
+
+No code or infrastructure changed in this entry - purely a planning/documentation update for next
+session's resume, since all AWS resources are currently torn down (see [[L19]]).
