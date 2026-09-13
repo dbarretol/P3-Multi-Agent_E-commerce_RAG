@@ -30,13 +30,14 @@ Taken 2026-09-12 against the current (2nd) deployment.
 
 AgentCore Runtime's documented logging/tracing configuration API
 (`put_agent_runtime_logging_configuration`) does not exist in any released AWS SDK —
-confirmed multiple independent ways (see `docs/lessons_learned.md` L17, L21, L22).
+confirmed via boto3/botocore service-model introspection (no such operation in any
+published release), the `AWS::BedrockAgentCore::Runtime` CloudFormation resource
+schema (no logging/tracing property exists on it), and independent cross-verification.
 This screenshot's trace was produced by `project/starter/scripts/xray_trace_demo.py`,
 which runs the real, fully-implemented agent system live and submits genuine X-Ray
 segments directly (`xray:PutTraceSegments`) rather than relying on the
 non-existent native configuration path. Nothing in the trace is fabricated — every
-timestamp comes from an actual live call. Full investigation trail:
-`docs/lessons_learned.md` L17, L18, L19, L21, L22, L23.
+timestamp comes from an actual live call.
 
 The underlying raw trace JSON (for anyone who wants to verify the data behind the
 screenshot) is at `../additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`.

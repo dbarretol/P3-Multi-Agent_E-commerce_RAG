@@ -9,8 +9,7 @@ Why this exists: AgentCore Runtime's logging-configuration API
 does not exist in the currently available AWS SDKs - confirmed against both
 the project's boto3 and AWS CLI v2's bundled botocore independently. The
 deployed runtime's invoke path also uses an MCP-native payload shape that the
-pre-written invoke_agent() helper doesn't match. See docs/lessons_learned.md
-L17/L18 for the full investigation.
+pre-written invoke_agent() helper doesn't match.
 
 This script produces a REAL, honest X-Ray trace of an actual live run of the
 fully-implemented multi-agent system instead. It builds Segment/Subsegment
