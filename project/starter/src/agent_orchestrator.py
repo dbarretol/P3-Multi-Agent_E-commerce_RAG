@@ -1120,19 +1120,25 @@ def configure_observability(runtime_arn: str) -> None:
     """
     runtime_id = runtime_arn.split('/')[-1]
 
-    # TODO: Configure observability
-    # NOTE: AgentCore API — control plane logging.
-    # put_agent_runtime_logging_configuration may not be available in all
-    # SDK versions — wrap the call in try/except and fall back gracefully.
-    # Use agentcore_control.put_agent_runtime_logging_configuration() with:
-    #   - agentRuntimeId (runtime_id)
-    #   - loggingConfiguration containing:
-    #     - cloudWatchConfig (logGroupName: config.AGENT_LOG_GROUP, logLevel: INFO, enabled: True)
-    #     - xRayConfig (enabled: True, samplingRate: 1.0)
-    # On success: print the CloudWatch log group and X-Ray sampling rate.
-    # On exception: print "[Note] Logging config skipped (SDK version mismatch): <e>"
-
-    pass
+    try:
+        agentcore_control.put_agent_runtime_logging_configuration(
+            agentRuntimeId=runtime_id,
+            loggingConfiguration={
+                'cloudWatchConfig': {
+                    'logGroupName': config.AGENT_LOG_GROUP,
+                    'logLevel':     'INFO',
+                    'enabled':      True,
+                },
+                'xRayConfig': {
+                    'enabled':      True,
+                    'samplingRate': 1.0,
+                },
+            },
+        )
+        print(f"  CloudWatch log group: {config.AGENT_LOG_GROUP} (INFO)")
+        print(f"  X-Ray sampling rate: 1.0 (100%)")
+    except Exception as e:
+        print(f"[Note] Logging config skipped (SDK version mismatch): {e}")
 
 
 # ═══════════════════════════════════════════════════════
