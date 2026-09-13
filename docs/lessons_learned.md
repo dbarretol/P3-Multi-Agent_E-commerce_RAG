@@ -520,6 +520,40 @@ too, for the same reason, though not separately confirmed.)
 
 ---
 
+## L17 — ⚠️ Task 6 (Observability): implemented correctly, but scores 0/20 — genuine API gap, not fixable from the code
+
+Implemented `configure_observability()` exactly per the TODO: `agentcore_control.put_agent_runtime_logging_configuration(agentRuntimeId=..., loggingConfiguration={cloudWatchConfig: {...}, xRayConfig: {...}})`
+wrapped in try/except with the exact fallback message the TODO specifies.
+
+**The method genuinely does not exist**, confirmed two independent ways before concluding this wasn't
+fixable by upgrading a package:
+1. `boto3.client('bedrock-agentcore-control').meta.service_model.operation_names` — no operation with
+   "Logging" or "Observ" in the name, on boto3 1.43.87 (the project's installed version, itself already
+   fairly recent since `requirements.txt` only pins `boto3>=1.34.0` with no ceiling).
+2. `aws bedrock-agentcore-control put-agent-runtime-logging-configuration help` on **AWS CLI v2 2.36.22**
+   (a separately-bundled, independent botocore) → `Found invalid choice`. Same for the `get-*` variant.
+
+Both SDKs — not just the project's pinned one — lack this operation entirely. This is exactly the
+scenario the starter's own TODO comments warned about ("may not be available in all SDK versions") and
+built a graceful-degradation path for. `test_agent.py`'s own `task6` tests call the identical missing
+method directly with no fallback, so they score 0/20 regardless of what `configure_observability()` does
+— this is a course-content/SDK-availability gap, not something to keep chasing from inside
+`agent_orchestrator.py`. Real score ceiling in this environment: **100/120**, not 120/120, through no
+fault of the implementation.
+
+**Open question for M7:** the lesson's Task 6 page also asks for a live X-Ray Service Map screenshot
+after running `python src/agent_orchestrator.py test`. That `test` mode calls the **local** Python
+`Agent` objects directly (`orchestrator(prompt)`) — it never goes through `invoke_agent()` /
+`invoke_agent_runtime()`, so it never actually executes inside the deployed AgentCore Runtime container.
+Separately, the deployed runtime's `agentRuntimeArtifact` is a placeholder zip (`main.py` containing only
+a comment — pre-written, not our real agent code) uploaded just to satisfy `create_agent_runtime`'s
+required-artifact parameter, not a working MCP server. Whether Bedrock/Strands auto-emit X-Ray segments
+for direct `Converse`/`Retrieve` calls made from a local script (independent of whether the runtime-level
+logging config above ever got applied) is unverified — needs to actually try `test` mode and check the
+X-Ray console before assuming either way.
+
+---
+
 ## Environment facts (current)
 
 | | |
@@ -531,7 +565,7 @@ too, for the same reason, though not separately confirmed.)
 | `.env` | repo root, gitignored |
 | Stack | `udacity-agentcore` — ✅ deployed 2026-09-12 on this account, `CREATE_COMPLETE`. **Real billable resources exist — see `PROJECT_PLAN.md` §16 for the full list + teardown steps.** |
 | Data | seeded 2026-09-12: 4 customers, 15 orders, 6 policy docs |
-| **Status** | Tasks 2 (40/40, [[L13]]), 5 (25/25, [[L14]]), 3 (20/20, [[L15]]), 4 (15/15, [[L16]]) done — cumulative 100/120. Next: Task 6 (Observability), then M7 end-to-end proof + X-Ray screenshot. |
+| **Status** | Tasks 2/3/4/5 done (100/120). Task 6 ([[L17]]) code complete but scores 0/20 — real API gap in both boto3 and AWS CLI v2, not fixable from `agent_orchestrator.py`. **All TODOs in the file are now resolved** — remaining work is M7 (live 3-scenario proof + required X-Ray screenshot), whose feasibility is an open question per L17. |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown

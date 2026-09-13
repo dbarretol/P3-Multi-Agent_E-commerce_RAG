@@ -351,16 +351,30 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 
 **File:** `src/agent_orchestrator.py` · **Test:** `python tests/test_agent.py task6`
 
+> **Status: ⚠️ CODE DONE (2026-09-12), score 0/20 in this environment — genuine SDK/API gap, not a
+> bug.** `put_agent_runtime_logging_configuration` / `get_agent_runtime_logging_configuration` do not
+> exist on `bedrock-agentcore-control` in **either** the project's boto3 (1.43.87) **or** AWS CLI v2
+> (2.36.22)'s bundled botocore — confirmed both independently. This is exactly the "SDK version mismatch"
+> scenario the starter's own TODO comments anticipated and instructed a graceful try/except fallback for.
+> The implementation is correct and matches the spec; `test_agent.py`'s own task6 checks call the same
+> missing method directly (no fallback in the test), so they score 0/20 regardless of what our code does.
+> Not something fixable from `agent_orchestrator.py` — would need a newer botocore than currently exists
+> publicly, or a different (undocumented) API shape. See `lessons_learned.md` L17.
+
 ### `configure_observability(runtime_arn)` → `None`
-- [ ] `runtime_id = runtime_arn.split('/')[-1]`
-- [ ] `try:` `agentcore_control.put_agent_runtime_logging_configuration(agentRuntimeId=runtime_id, loggingConfiguration={...})` with:
+- [x] `runtime_id = runtime_arn.split('/')[-1]`
+- [x] `try:` `agentcore_control.put_agent_runtime_logging_configuration(agentRuntimeId=runtime_id, loggingConfiguration={...})` with:
       - `cloudWatchConfig`: `logGroupName=config.AGENT_LOG_GROUP`, `logLevel='INFO'`, `enabled=True`
       - `xRayConfig`: `enabled=True`, `samplingRate=1.0`
       - on success: print log group + sampling rate
-- [ ] `except Exception as e:` print `"[Note] Logging config skipped (SDK version mismatch): {e}"`
+- [x] `except Exception as e:` print `"[Note] Logging config skipped (SDK version mismatch): {e}"` — this is the path that actually executes today
 
 ### Milestone M6 — verification
-`python tests/test_agent.py task6` → **20/20** (CloudWatch `enabled=True`, X-Ray `enabled=True`)
+`python tests/test_agent.py task6` → **0/20 in this environment** (see status note above) — code itself is correct/complete per spec
+
+### Evidence collected → `docs/evidence/06-observability/`
+- **E6.1** `E6.1-task6-result.txt` — shows the exact `AttributeError` proving the API gap, not a code defect
+- **E6.2** `E6.2-deploy-step5-observability.txt` — deploy pipeline's graceful `[Note] Logging config skipped (SDK version mismatch)` message, exactly as the TODO instructed
 
 ### Milestone M7 — end-to-end proof
 - [ ] `python src/agent_orchestrator.py deploy` (final, clean run with all functions implemented)
