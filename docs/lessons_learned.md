@@ -541,16 +541,27 @@ method directly with no fallback, so they score 0/20 regardless of what `configu
 `agent_orchestrator.py`. Real score ceiling in this environment: **100/120**, not 120/120, through no
 fault of the implementation.
 
-**Open question for M7:** the lesson's Task 6 page also asks for a live X-Ray Service Map screenshot
-after running `python src/agent_orchestrator.py test`. That `test` mode calls the **local** Python
-`Agent` objects directly (`orchestrator(prompt)`) — it never goes through `invoke_agent()` /
-`invoke_agent_runtime()`, so it never actually executes inside the deployed AgentCore Runtime container.
-Separately, the deployed runtime's `agentRuntimeArtifact` is a placeholder zip (`main.py` containing only
-a comment — pre-written, not our real agent code) uploaded just to satisfy `create_agent_runtime`'s
-required-artifact parameter, not a working MCP server. Whether Bedrock/Strands auto-emit X-Ray segments
-for direct `Converse`/`Retrieve` calls made from a local script (independent of whether the runtime-level
-logging config above ever got applied) is unverified — needs to actually try `test` mode and check the
-X-Ray console before assuming either way.
+**M7 X-Ray deliverable — tried it, confirmed it does NOT work as literally instructed (2026-09-12):**
+Ran `python src/agent_orchestrator.py test` (all 3 canonical scenarios, all completed successfully),
+waited, then polled `aws xray get-trace-summaries` / `get-service-graph` for the surrounding ~30 min
+window. **Zero traces, empty service graph.** Root cause is two compounding things, not one:
+1. `configure_observability()` never actually applies (the SDK gap above) — X-Ray sampling was never
+   truly enabled on the runtime.
+2. Even if it had been: `test` mode calls the **local** Python `Agent` objects directly
+   (`orchestrator(prompt)`) — it never goes through `invoke_agent()` / `invoke_agent_runtime()`, so it
+   never executes inside the deployed AgentCore Runtime container that X-Ray would actually trace.
+   Separately, the deployed runtime's `agentRuntimeArtifact` is a placeholder zip (`main.py` containing
+   only a one-line comment — pre-written, not our real agent code) uploaded just to satisfy
+   `create_agent_runtime`'s required-artifact parameter; it isn't a working MCP server, so invoking the
+   *deployed* runtime for real wouldn't produce a meaningful trace either without a much larger, explicitly
+   out-of-scope change (packaging `src/` into a real MCP handler and redeploying the artifact — the
+   starter's own docstring on `deploy_to_agentcore_runtime()` says AgentCore "does not serialize Python
+   objects directly," implying this project's scope stops at provisioning the resources, not wiring up a
+   truly invokable hosted runtime).
+
+**Conclusion:** the X-Ray Service Map deliverable (D4) is not achievable via the documented steps in this
+environment, for reasons upstream of this codebase (a real AWS SDK/API gap plus a local-vs-hosted
+execution mismatch baked into the starter's own design) — not something to keep re-attempting.
 
 ---
 

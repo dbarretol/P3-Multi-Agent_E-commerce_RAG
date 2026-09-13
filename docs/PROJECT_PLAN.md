@@ -377,28 +377,34 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 - **E6.2** `E6.2-deploy-step5-observability.txt` — deploy pipeline's graceful `[Note] Logging config skipped (SDK version mismatch)` message, exactly as the TODO instructed
 
 ### Milestone M7 — end-to-end proof
-- [ ] `python src/agent_orchestrator.py deploy` (final, clean run with all functions implemented)
-- [ ] `python src/agent_orchestrator.py test` — verify routing:
+- [x] `python src/agent_orchestrator.py deploy` (final, clean run with all functions implemented) — ran 2026-09-12, all steps complete/idempotent
+- [x] `python src/agent_orchestrator.py test` — verified routing, all 3 scenarios completed correctly:
 
-  | Scenario | Expected routing |
-  |---|---|
-  | "I want to return my order ORD-27176" | Orchestrator → Inventory → Refund → Communication |
-  | "What is the return policy for premium customers?" | Orchestrator → Policy (3 parallel KB retrievers) → Communication |
-  | "How much are 5 items at $29.99 with 10% off?" | Orchestrator answers directly → Communication |
+  | Scenario | Expected routing | Result |
+  |---|---|---|
+  | "I want to return my wireless headphones from order ORD-27176" | Orchestrator → Inventory → Refund → Communication | Ran clean (this exact order ID doesn't exist in this run's randomly-seeded data — see [[L13]] — so it correctly resolved to Inventory → Communication; the full Inventory→Refund→Communication chain was separately proven live against a real order in [[L13]]) |
+  | "What is the return policy for premium customers?" | Orchestrator → Policy (3 parallel KB retrievers) → Communication | ✅ real grounded content from all 3 KBs (see [[L14]]) |
+  | "How much are 5 items at $29.99 with 10% off?" | Orchestrator answers directly → Communication | ✅ answered directly, no sub-agent routing |
 
-- [ ] Wait 30–60 s, open **AWS Console → X-Ray → Service map**
-- [ ] Capture the service map showing Orchestrator connected to ≥ 1 worker
-- [ ] `python tests/test_agent.py all` → **120/120**
+- [x] ⚠️ **X-Ray Service Map — attempted, confirmed NOT achievable in this environment.** Waited and
+  polled `aws xray get-trace-summaries` / `get-service-graph` over a ~30-minute window after the `test`
+  run above: **zero traces, empty service graph.** Root cause is upstream of this codebase — see
+  `lessons_learned.md` L17 for the full analysis (Task 6's SDK gap + `test` mode never actually executing
+  inside the deployed, traced AgentCore Runtime). **Deliverable D4 cannot be produced via the documented
+  steps here.**
+- [x] `python tests/test_agent.py all` → **100/120** (ceiling in this environment — Task 6's 20 points are
+  blocked by a genuine, externally-confirmed SDK/API gap, not an implementation defect)
 
-### Evidence to collect
-- **E6.1** Terminal capture: `python tests/test_agent.py task6` = `20/20`
-- **E6.2** Console screenshot: AgentCore runtime logging config (CloudWatch INFO enabled, X-Ray 1.0 enabled) — or CloudWatch log group `/aws/bedrock/agentcore/udacity-agentcore` with log streams
-- **E7.1** Terminal capture: final `python src/agent_orchestrator.py deploy` (all 6 steps OK)
-- **E7.2** Terminal capture: `python src/agent_orchestrator.py test` — 3 scenarios, routing visible in trace
-- **E7.3** ⭐ **REQUIRED DELIVERABLE (D4)** — screenshot of **X-Ray Service Map** with the connected Orchestrator → worker trace graph
-- **E7.4** Terminal capture: `python tests/test_agent.py all` = `120/120`
-- **E7.5** Final `git diff` / copy of completed `src/agent_orchestrator.py` (D1)
-- **E7.6** Final `.env` with all 6 populated values (D3) — redact secret access key / session token
+### Evidence collected → `docs/evidence/07-e2e/`
+- **E7.1** ✅ `E7.1-final-deploy.txt` — final `deploy` run, all 6 steps (idempotent)
+- **E7.2** ✅ `E7.2-three-scenarios-routing.txt` — `agent_orchestrator.py test`, all 3 scenarios
+- **E7.3** ❌ **D4 NOT ACHIEVABLE HERE** — `E7.3-xray-attempt-empty.txt` documents the attempt: empty
+  trace summaries + empty service graph over a 30-min window after the test run. See M7 status above and
+  `lessons_learned.md` L17 for the confirmed root cause (Task 6 SDK gap + local-vs-hosted execution
+  mismatch — not fixable from this codebase).
+- **E7.4** ✅ `E7.4-final-all-score.txt` — `100/120` (not 120/120 — Task 6 ceiling, see L17)
+- **E7.5** ✅ `E7.5-final-agent_orchestrator.py` — full final implementation (D1)
+- **E7.6** ✅ `E7.6-env-final-redacted.txt` — final `.env` (KB IDs, runtime ARN, guardrail id/version — no secrets)
 
 ---
 
@@ -406,39 +412,38 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 
 | ID | Artifact | Format | Maps to | Collected |
 |---|---|---|---|---|
-| E0.1 | caller identity + stack `CREATE_COMPLETE` | terminal | M0 | ☐ |
-| E0.2 | `python config.py` table | terminal | M0 | ☐ |
-| E0.3 | Bedrock model access (3 models) | screenshot | M0 | ☐ |
-| E0.4 | S3 `policies/` tree | screenshot | M0 | ☐ |
-| E0.5 | DynamoDB customers items | screenshot | M0 | ☐ |
-| E2.1 | `task2` = 40/40 | terminal | M2 / D1 | ☐ |
-| E2.2 | `demo.py` full trace | terminal | M2 | ☐ |
-| E2.3 | `agent_orchestrator.py test` ×3 | terminal | M2 | ☐ |
-| E2.4 | Task 2 `git diff` | diff | D1 | ☐ |
-| E2.5 | WorkflowState record version > 0 | screenshot | M2 | ☐ |
-| E3.1 | 3 KBs `Available` | screenshot | M3 / D2 | ☐ |
-| E3.2 | 3× sync history `Completed` | screenshot | M3 / D2 | ☐ |
-| E3.3 | `task5` = 25/25 | terminal | M3 | ☐ |
-| E3.4 | parallel retrieval, 3 domains non-empty | terminal | M3 | ☐ |
-| E3.5 | `.env` KB IDs | text | D3 | ☐ |
-| E4.1 | `deploy` full output | terminal | M4 | ☐ |
-| E4.2 | Guardrail detail (versioned) | screenshot | M4 / D1 | ☐ |
-| E4.3 | AgentCore runtime (PUBLIC/MCP) | screenshot | M4 | ☐ |
-| E4.4 | `task3` = 20/20 | terminal | M4 | ☐ |
-| E4.5 | `.env` runtime ARN + guardrail | text | D3 | ☐ |
-| E4.6 | adversarial guardrail probes | screenshots | stretch | ☐ |
-| E5.1 | `task4` = 15/15 | terminal | M5 | ☐ |
-| E5.2 | deploy Step 4/6 + memory ARN | terminal | M5 | ☐ |
-| E5.3 | Memory resource `SESSION_SUMMARY` | screenshot | M5 | ☐ |
-| E5.4 | `configure_memory()` diff | diff | D1 | ☐ |
-| E6.1 | `task6` = 20/20 | terminal | M6 | ☐ |
-| E6.2 | logging config / log group | screenshot | M6 | ☐ |
-| E7.1 | final `deploy` | terminal | M7 | ☐ |
-| E7.2 | final `test` routing ×3 | terminal | M7 | ☐ |
-| **E7.3** | **X-Ray Service Map** | **screenshot** | **D4** | ☐ |
-| E7.4 | `all` = 120/120 | terminal | M7 | ☐ |
-| E7.5 | completed `agent_orchestrator.py` | file | D1 | ☐ |
-| E7.6 | final `.env` (redacted) | text | D3 | ☐ |
+| E0.1 | caller identity + stack `CREATE_COMPLETE` | terminal | M0 | ✅ |
+| E0.2 | `python config.py` table | terminal | M0 | ✅ |
+| E0.3 | Bedrock model access (3 models) | screenshot | M0 | ✅ |
+| E0.4 | S3 `policies/` tree | screenshot | M0 | ✅ (CLI capture) |
+| E0.5 | DynamoDB customers items | screenshot | M0 | ✅ (CLI capture) |
+| E2.1 | `task2` = 40/40 | terminal | M2 / D1 | ✅ |
+| E2.2 | full refund-chain trace | terminal | M2 | ✅ |
+| E2.3 | `agent_orchestrator.py test` ×3 | terminal | M2 | ✅ |
+| E2.4 | Task 2 diff (`main` vs `dev/task-01`) | diff | D1 | ✅ |
+| E2.5 | WorkflowState record version > 0 | terminal (`get-item`) | M2 | ✅ |
+| E3.1 | 3 KBs `Available` | terminal (CLI) | M3 / D2 | ✅ |
+| E3.2 | 3× sync history `Completed` | terminal (CLI) | M3 / D2 | ✅ |
+| E3.3 | `task5` = 25/25 | terminal | M3 | ✅ |
+| E3.4 | parallel retrieval, 3 domains non-empty, real content | terminal | M3 | ✅ |
+| E3.5 | `.env` KB IDs | text | D3 | ✅ |
+| E4.1 | `deploy` full output | terminal | M4 | ✅ |
+| E4.2 | Guardrail detail (versioned) | terminal (CLI) | M4 / D1 | ✅ |
+| E4.3 | AgentCore runtime (PUBLIC/MCP) | terminal (CLI) | M4 | ✅ |
+| E4.4 | `task3` = 20/20 | terminal | M4 | ✅ |
+| E4.5 | `.env` runtime ARN + guardrail | text | D3 | ✅ |
+| E4.6 | adversarial guardrail probes | screenshots | stretch | ☐ (not attempted — optional stand-out) |
+| E5.1 | `task4` = 15/15 (via `all`) | terminal | M5 | ✅ |
+| E5.2 | deploy Step 4/6 + memory ARN | terminal | M5 | ✅ |
+| E5.3 | Memory resource, `SUMMARIZATION` strategy | terminal (CLI) | M5 | ✅ |
+| E6.1 | `task6` result (0/20, `AttributeError` — SDK gap) | terminal | M6 | ✅ |
+| E6.2 | deploy Step 5/6 graceful-skip message | terminal | M6 | ✅ |
+| E7.1 | final `deploy` | terminal | M7 | ✅ |
+| E7.2 | final `test` routing ×3 | terminal | M7 | ✅ |
+| **E7.3** | **X-Ray Service Map** | **screenshot** | **D4** | ❌ **not achievable — see M7 / L17** |
+| E7.4 | `all` = **100/120** (not 120/120 — Task 6 ceiling) | terminal | M7 | ✅ |
+| E7.5 | completed `agent_orchestrator.py` | file | D1 | ✅ |
+| E7.6 | final `.env` (redacted) | text | D3 | ✅ |
 
 > Suggested storage: `docs/evidence/` with subfolders `00-setup/ 02-agents/ 05-kb/ 03-guardrail-runtime/ 04-memory/ 06-observability/ 07-e2e/`. Name files `E<id>-<slug>.png|txt`.
 
@@ -483,13 +488,21 @@ Rationale: KBs (M3) must exist before deploy (M4) so the runtime env vars carry 
 
 ## 14. Definition of done
 
-- [ ] `python tests/test_agent.py all` → **120/120**
-- [ ] D1–D4 collected in `docs/evidence/`
-- [ ] `.env` has all 6 task-populated values
-- [ ] `git diff` touches only `src/agent_orchestrator.py`
-- [ ] X-Ray Service Map screenshot shows Orchestrator → ≥1 worker
-- [ ] **Industry Best Practices pass** (rubric category, not covered by `test_agent.py`): every tool function has a docstring (purpose/params/return); every `build_*_agent()` returns exactly one `Agent`; names are `snake_case`/descriptive; no hardcoded model-ID strings anywhere — only `config.ORCHESTRATOR_MODEL_ID` / `config.WORKER_MODEL_ID`
-- [ ] Submission package assembled per Udacity classroom instructions
+- [x] All TODOs in `src/agent_orchestrator.py` implemented (Tasks 2, 3, 4, 6)
+- [x] `python tests/test_agent.py all` → **100/120** — ⚠️ not 120/120: Task 6's 20 points are blocked by a
+      real AWS SDK/API gap confirmed in two independent SDKs (boto3 1.43.87 and AWS CLI v2 2.36.22 both
+      lack `put/get_agent_runtime_logging_configuration` entirely), not an implementation defect — see
+      `lessons_learned.md` L17
+- [x] D1 (code) and D2/D3 (KBs + `.env`) collected in `docs/evidence/`
+- [ ] **D4 (X-Ray Service Map screenshot) — NOT achievable via the documented steps in this environment.**
+      Attempted per M7: zero traces / empty service graph after running `test`, confirmed over a 30-min
+      poll window. Root cause is the Task 6 SDK gap plus `test` mode never executing inside the deployed,
+      traced AgentCore Runtime (its artifact is a pre-written placeholder, not real agent code). This is
+      an environment/course-content limitation, not something further code changes here can fix.
+- [x] `.env` has all 6 task-populated values
+- [x] `git diff` (`main` vs `dev/task-01`) touches only `src/agent_orchestrator.py`
+- [x] **Industry Best Practices pass**: every tool function has a docstring (purpose/params/return); every `build_*_agent()` returns exactly one `Agent`; names are `snake_case`/descriptive; no hardcoded model-ID strings anywhere — only `config.ORCHESTRATOR_MODEL_ID` / `config.WORKER_MODEL_ID`
+- [ ] Submission package assembled per Udacity classroom instructions — **before submitting, flag the D4 gap to course staff / re-check whether a newer AWS SDK release has since added the missing operation**
 
 ---
 
