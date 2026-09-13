@@ -712,3 +712,47 @@ checklist, now in `PROJECT_PLAN.md` §16 "Resume checklist":
 
 No code or infrastructure changed in this entry - purely a planning/documentation update for next
 session's resume, since all AWS resources are currently torn down (see [[L19]]).
+
+---
+
+## L21 — 2026-09-12: Deep-dive research before drafting the Udacity bug report - found the real API
+
+User asked for comprehensive research before drafting the course-bug report, not just the investigation
+already in [[L17]]/[[L18]]. Went several layers deeper to make sure the report is airtight:
+
+1. **Third independent confirmation of the gap:** fetched the `AWS::BedrockAgentCore::Runtime`
+   CloudFormation resource schema directly - its full property list (`AgentRuntimeArtifact`,
+   `AgentRuntimeName`, `AuthorizerConfiguration`, `CapacityProviderConfiguration`, `Description`,
+   `EnvironmentVariables`, `FilesystemConfigurations`, `LifecycleConfiguration`, `NetworkConfiguration`,
+   `ProtocolConfiguration`, `RequestHeaderConfiguration`, `RoleArn`, `Tags`) has **no logging/tracing
+   property at all**, matching the boto3-side absence found in [[L17]]. Also freshly enumerated the
+   *data-plane* `bedrock-agentcore` client's full operation list (as opposed to `-control` checked
+   earlier) - no logging-related operation there either.
+
+2. **Found the actual, real, currently-shipping mechanism** (this is new - not in [[L18]]): AWS's stable,
+   non-alpha `aws-cdk-lib/aws-bedrockagentcore` `Runtime` L2 construct exposes `loggingConfigs` and
+   `tracingEnabled` props. Traced what these actually call: the **generic CloudWatch Logs "Delivery" API**
+   - `logs.put_delivery_source(resourceArn=<runtime_arn>, logType=...)`,
+   `logs.put_delivery_destination(deliveryDestinationType='CWL'|'XRAY', ...)`, `logs.create_delivery(...)`
+   - confirmed via boto3's service model that `PutDeliverySource`/`PutDeliveryDestination` are real,
+   current operations on the plain `logs` client (not `bedrock-agentcore-control`), and confirmed via
+   external sources that `logType='TRACES'` (→ XRAY destination) and `logType='APPLICATION_LOGS'`
+   (→ CWL destination) are valid specifically for AgentCore Runtime `resourceArn` values - contradicting
+   AWS's own prose in `observability-configure.html` which claims this delivery-source/destination
+   mechanism is "only applicable for memory and gateway resources." The prose is simply incomplete/stale
+   next to what the CDK construct (and CloudWatch Logs API itself) actually supports.
+
+3. **Practical implication:** `configure_observability()` can be rewritten to use this *real* API and
+   genuinely, verifiably enable CloudWatch log delivery + X-Ray trace delivery for the runtime - a correct
+   working implementation, just using a different (real, current) API than the one the rubric's test
+   script names. Added this as resume-checklist step 5 in `PROJECT_PLAN.md` §16. This still cannot make
+   `test_agent.py task6` pass (it hardcodes the fictional method name and calls it directly against the
+   live client, independent of what our code does) but strengthens both the actual infrastructure outcome
+   and the bug report's credibility - "here is the real mechanism AWS shipped instead" is a much stronger
+   claim than "the AWS API doesn't exist."
+
+4. **Searched for third-party corroboration** (AWS re:Post, Udacity mentor forums/Knowledge, GitHub code
+   search) for other students or users hitting this exact issue - found nothing directly on point. Not
+   concerning: this specific Nanodegree project and AgentCore's observability API are both very recent/
+   niche, so absence of chatter doesn't weaken the first-party technical evidence (SDK enumeration + CFN
+   schema + CDK construct source), it just means there's no external corroboration to cite alongside it.

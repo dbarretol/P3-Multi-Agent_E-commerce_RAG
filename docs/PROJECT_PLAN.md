@@ -653,14 +653,26 @@ After redeploying, do these **in order**, before calling the project done again:
    - AgentCore console → **Agent Runtime** → select the new runtime → **Tracing** pane → Edit → **Enable**
      → Save
    - Take a screenshot of the enabled Tracing toggle as supplementary Task 6 evidence.
-5. **File the course-bug report with Udacity** (mentor/Knowledge channel, or attached to the submission)
+5. **Implement the *real* observability API in `configure_observability()` before redeploying again** —
+   deeper research (2026-09-12, see [[L21]]) found the actual current mechanism: the generic CloudWatch
+   Logs "Delivery" API (`logs.put_delivery_source` / `put_delivery_destination` / `create_delivery`),
+   confirmed valid for AgentCore Runtime resourceArns with `logType='APPLICATION_LOGS'` (→ CWL
+   destination) and `logType='TRACES'` (→ XRAY destination) — this is what AWS's own stable, non-alpha
+   `aws-cdk-lib/aws-bedrockagentcore` `Runtime` construct's `loggingConfigs`/`tracingEnabled` props
+   actually call under the hood. Rewrite `configure_observability()` to call this real API (on the `logs`
+   client, not `bedrock-agentcore-control`) so the function does something genuinely correct and
+   verifiable, instead of a doomed call to a method that was never shipped. This **still won't make
+   `test_agent.py task6` pass** (it hardcodes the fictional method name) but makes the actual
+   infrastructure outcome (CloudWatch logs + X-Ray traces really flowing for the runtime) genuinely real.
+6. **File the course-bug report with Udacity** (mentor/Knowledge channel, or attached to the submission)
    before or at resubmission time — this is the actual lever for getting the unreachable 20 points
-   reconsidered by a human reviewer, since the automated check can never pass for any student. Draft was
-   offered but not yet requested as of 2026-09-12 — ask the assistant to produce it when ready; it cites
-   the exact method name confirmed absent from ~2,500 botocore releases and AWS's own API docs, plus the
-   real console-only mechanism AWS actually shipped instead.
-6. **Do not** attempt to mock/monkeypatch the boto3 client so the test appears to pass — confirmed
-   dishonest and unnecessary; the correct path is the documented gap + bug report above.
+   reconsidered by a human reviewer, since the automated check can never pass for any student. Cites the
+   exact method name confirmed absent from ~2,500 botocore releases, AWS's public API docs, and the
+   `AWS::BedrockAgentCore::Runtime` CloudFormation schema, plus both real mechanisms AWS actually shipped
+   instead (the console-only Tracing toggle, and the `logs` Delivery API above).
+7. **Do not** attempt to mock/monkeypatch the boto3 client so the test appears to pass — confirmed
+   dishonest and unnecessary; the correct path is the documented gap + real implementation + bug report
+   above.
 
 ---
 
