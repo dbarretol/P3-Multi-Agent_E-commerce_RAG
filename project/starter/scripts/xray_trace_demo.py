@@ -129,4 +129,4 @@ def run_scenario(customer_id: str, query: str) -> None:
 
 
 if __name__ == '__main__':
-    run_scenario('CUST-002', 'I want to return my Desk Lamp LED from order ORD-91987')
+    run_scenario('CUST-002', 'I want to return my Desk Lamp LED from order ORD-39460')
