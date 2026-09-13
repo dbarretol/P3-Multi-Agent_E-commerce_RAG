@@ -8,11 +8,11 @@
             ],
             "Type": "remote",
             "State": "passive",
-            "StartTime": "2026-09-12T19:35:00-05:00",
-            "EndTime": "2026-09-12T19:35:01-05:00",
+            "StartTime": "2026-09-12T23:11:34-05:00",
+            "EndTime": "2026-09-12T23:12:32-05:00",
             "Edges": [],
             "SummaryStatistics": {
-                "OkCount": 1,
+                "OkCount": 2,
                 "ErrorStatistics": {
                     "ThrottleCount": 0,
                     "OtherCount": 0,
@@ -22,18 +22,26 @@
                     "OtherCount": 0,
                     "TotalCount": 0
                 },
-                "TotalCount": 1,
-                "TotalResponseTime": 8.802
+                "TotalCount": 2,
+                "TotalResponseTime": 18.811
             },
             "DurationHistogram": [
                 {
-                    "Value": 8.802,
+                    "Value": 9.326,
+                    "Count": 1
+                },
+                {
+                    "Value": 9.485,
                     "Count": 1
                 }
             ],
             "ResponseTimeHistogram": [
                 {
-                    "Value": 8.802,
+                    "Value": 9.326,
+                    "Count": 1
+                },
+                {
+                    "Value": 9.485,
                     "Count": 1
                 }
             ]
@@ -46,11 +54,11 @@
             ],
             "Type": "remote",
             "State": "passive",
-            "StartTime": "2026-09-12T19:35:00-05:00",
-            "EndTime": "2026-09-12T19:35:01-05:00",
+            "StartTime": "2026-09-12T23:11:34-05:00",
+            "EndTime": "2026-09-12T23:12:32-05:00",
             "Edges": [],
             "SummaryStatistics": {
-                "OkCount": 1,
+                "OkCount": 2,
                 "ErrorStatistics": {
                     "ThrottleCount": 0,
                     "OtherCount": 0,
@@ -60,18 +68,26 @@
                     "OtherCount": 0,
                     "TotalCount": 0
                 },
-                "TotalCount": 1,
-                "TotalResponseTime": 6.822
+                "TotalCount": 2,
+                "TotalResponseTime": 13.178
             },
             "DurationHistogram": [
                 {
-                    "Value": 6.822,
+                    "Value": 6.11,
+                    "Count": 1
+                },
+                {
+                    "Value": 7.069,
                     "Count": 1
                 }
             ],
             "ResponseTimeHistogram": [
                 {
-                    "Value": 6.822,
+                    "Value": 6.11,
+                    "Count": 1
+                },
+                {
+                    "Value": 7.069,
                     "Count": 1
                 }
             ]
@@ -84,15 +100,15 @@
             ],
             "Root": true,
             "State": "active",
-            "StartTime": "2026-09-12T19:32:04-05:00",
-            "EndTime": "2026-09-12T19:35:01-05:00",
+            "StartTime": "2026-09-12T23:11:34-05:00",
+            "EndTime": "2026-09-12T23:12:32-05:00",
             "Edges": [
                 {
                     "ReferenceId": 4,
-                    "StartTime": "2026-09-12T19:32:04-05:00",
-                    "EndTime": "2026-09-12T19:35:01-05:00",
+                    "StartTime": "2026-09-12T23:11:34-05:00",
+                    "EndTime": "2026-09-12T23:12:32-05:00",
                     "SummaryStatistics": {
-                        "OkCount": 1,
+                        "OkCount": 2,
                         "ErrorStatistics": {
                             "ThrottleCount": 0,
                             "OtherCount": 0,
@@ -102,12 +118,16 @@
                             "OtherCount": 0,
                             "TotalCount": 0
                         },
-                        "TotalCount": 1,
-                        "TotalResponseTime": 8.562
+                        "TotalCount": 2,
+                        "TotalResponseTime": 17.134
                     },
                     "ResponseTimeHistogram": [
                         {
-                            "Value": 8.562,
+                            "Value": 7.36,
+                            "Count": 1
+                        },
+                        {
+                            "Value": 9.774,
                             "Count": 1
                         }
                     ],
@@ -115,10 +135,10 @@
                 },
                 {
                     "ReferenceId": 1,
-                    "StartTime": "2026-09-12T19:32:04-05:00",
-                    "EndTime": "2026-09-12T19:35:01-05:00",
+                    "StartTime": "2026-09-12T23:11:34-05:00",
+                    "EndTime": "2026-09-12T23:12:32-05:00",
                     "SummaryStatistics": {
-                        "OkCount": 1,
+                        "OkCount": 2,
                         "ErrorStatistics": {
                             "ThrottleCount": 0,
                             "OtherCount": 0,
@@ -128,12 +148,16 @@
                             "OtherCount": 0,
                             "TotalCount": 0
                         },
-                        "TotalCount": 1,
-                        "TotalResponseTime": 6.822
+                        "TotalCount": 2,
+                        "TotalResponseTime": 13.178
                     },
                     "ResponseTimeHistogram": [
                         {
-                            "Value": 6.822,
+                            "Value": 6.11,
+                            "Count": 1
+                        },
+                        {
+                            "Value": 7.069,
                             "Count": 1
                         }
                     ],
@@ -141,10 +165,10 @@
                 },
                 {
                     "ReferenceId": 0,
-                    "StartTime": "2026-09-12T19:32:04-05:00",
-                    "EndTime": "2026-09-12T19:35:01-05:00",
+                    "StartTime": "2026-09-12T23:11:34-05:00",
+                    "EndTime": "2026-09-12T23:12:32-05:00",
                     "SummaryStatistics": {
-                        "OkCount": 1,
+                        "OkCount": 2,
                         "ErrorStatistics": {
                             "ThrottleCount": 0,
                             "OtherCount": 0,
@@ -154,12 +178,16 @@
                             "OtherCount": 0,
                             "TotalCount": 0
                         },
-                        "TotalCount": 1,
-                        "TotalResponseTime": 8.802
+                        "TotalCount": 2,
+                        "TotalResponseTime": 18.811
                     },
                     "ResponseTimeHistogram": [
                         {
-                            "Value": 8.802,
+                            "Value": 9.326,
+                            "Count": 1
+                        },
+                        {
+                            "Value": 9.485,
                             "Count": 1
                         }
                     ],
@@ -178,25 +206,25 @@
                     "TotalCount": 0
                 },
                 "TotalCount": 2,
-                "TotalResponseTime": 67.065
+                "TotalResponseTime": 65.607
             },
             "DurationHistogram": [
                 {
-                    "Value": 32.513,
+                    "Value": 34.239,
                     "Count": 1
                 },
                 {
-                    "Value": 34.552,
+                    "Value": 31.368,
                     "Count": 1
                 }
             ],
             "ResponseTimeHistogram": [
                 {
-                    "Value": 32.513,
+                    "Value": 34.239,
                     "Count": 1
                 },
                 {
-                    "Value": 34.552,
+                    "Value": 31.368,
                     "Count": 1
                 }
             ]
@@ -209,13 +237,13 @@
             ],
             "Type": "client",
             "State": "unknown",
-            "StartTime": "2026-09-12T19:32:04-05:00",
-            "EndTime": "2026-09-12T19:35:01-05:00",
+            "StartTime": "2026-09-12T23:11:34-05:00",
+            "EndTime": "2026-09-12T23:12:32-05:00",
             "Edges": [
                 {
                     "ReferenceId": 2,
-                    "StartTime": "2026-09-12T19:32:04-05:00",
-                    "EndTime": "2026-09-12T19:35:01-05:00",
+                    "StartTime": "2026-09-12T23:11:34-05:00",
+                    "EndTime": "2026-09-12T23:12:32-05:00",
                     "SummaryStatistics": {
                         "OkCount": 2,
                         "ErrorStatistics": {
@@ -228,15 +256,15 @@
                             "TotalCount": 0
                         },
                         "TotalCount": 2,
-                        "TotalResponseTime": 67.065
+                        "TotalResponseTime": 65.607
                     },
                     "ResponseTimeHistogram": [
                         {
-                            "Value": 32.513,
+                            "Value": 34.239,
                             "Count": 1
                         },
                         {
-                            "Value": 34.552,
+                            "Value": 31.368,
                             "Count": 1
                         }
                     ],
@@ -252,11 +280,11 @@
             ],
             "Type": "remote",
             "State": "passive",
-            "StartTime": "2026-09-12T19:35:00-05:00",
-            "EndTime": "2026-09-12T19:35:01-05:00",
+            "StartTime": "2026-09-12T23:11:34-05:00",
+            "EndTime": "2026-09-12T23:12:32-05:00",
             "Edges": [],
             "SummaryStatistics": {
-                "OkCount": 1,
+                "OkCount": 2,
                 "ErrorStatistics": {
                     "ThrottleCount": 0,
                     "OtherCount": 0,
@@ -266,24 +294,32 @@
                     "OtherCount": 0,
                     "TotalCount": 0
                 },
-                "TotalCount": 1,
-                "TotalResponseTime": 8.562
+                "TotalCount": 2,
+                "TotalResponseTime": 17.134
             },
             "DurationHistogram": [
                 {
-                    "Value": 8.562,
+                    "Value": 7.36,
+                    "Count": 1
+                },
+                {
+                    "Value": 9.774,
                     "Count": 1
                 }
             ],
             "ResponseTimeHistogram": [
                 {
-                    "Value": 8.562,
+                    "Value": 7.36,
+                    "Count": 1
+                },
+                {
+                    "Value": 9.774,
                     "Count": 1
                 }
             ]
         }
     ],
-    "StartTime": "2026-09-12T19:32:04-05:00",
-    "EndTime": "2026-09-12T19:35:00-05:00",
+    "StartTime": "2026-09-12T23:11:34-05:00",
+    "EndTime": "2026-09-12T23:12:31-05:00",
     "ContainsOldGroupVersions": false
 }
