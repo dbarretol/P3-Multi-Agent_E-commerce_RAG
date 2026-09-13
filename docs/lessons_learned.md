@@ -494,6 +494,32 @@ but the gateway shell itself exists and isn't free). Added to the teardown list 
 
 ---
 
+## L16 — ✅ Task 4 (AgentCore Memory) implemented; test-harness quirk: `task4` alone always fails
+
+Implemented `configure_memory()`: `create_memory(name=memory_name, eventExpiryDuration=7,
+memoryExecutionRoleArn=config.AGENTCORE_ROLE_ARN, memoryStrategies=[{'summaryMemoryStrategy': {'name':
+'session_summary', 'namespaces': ['/summaries/{sessionId}']}}], clientToken=memory_name)`. Confirmed the
+`namespaces` field's allowed placeholder tokens (`{actorId}`, `{sessionId}`, `{memoryStrategyId}`) via
+`aws bedrock-agentcore-control create-memory help` before guessing a value.
+
+Real resource created: `udacity_agentcore_memory-yX3G4HDqFe`. Took about 90 seconds to go from
+`CREATING` to `ACTIVE` after the API call returned — a real backend provisioning delay, don't assume it's
+instantly usable right after `create_memory()` returns if something downstream needs to read it back.
+
+**Test-harness quirk (important, applies beyond just Task 4):** `python tests/test_agent.py task4` run
+**in isolation** fails with `'BedrockAgentCore' object has no attribute 'get_agent_runtime'`, even though
+the real memory resource is correctly created and `ACTIVE`. Root cause: `agent_orchestrator.py`'s
+pre-written `_register_agentcore_compat_methods()` patch (which adds `get_agent_runtime` etc. to the raw
+`bedrock-agentcore` boto3 client) only runs when the module is imported — and only `TestTask2.setUp` does
+`import agent_orchestrator as ao`. `TestTask4.setUp` never imports it, so the client it builds is
+unpatched. Running `task4` **after** `task2` in the same process (i.e. `python tests/test_agent.py all`,
+which is also the real scoring command) works fine, because the patch is already registered globally by
+then. **Lesson: never trust an individual `test_agent.py taskN` run for N ≥ 3 in isolation as proof of
+failure — always re-check via `all` before concluding something is broken.** (Likely affects task3/task6
+too, for the same reason, though not separately confirmed.)
+
+---
+
 ## Environment facts (current)
 
 | | |
@@ -505,7 +531,7 @@ but the gateway shell itself exists and isn't free). Added to the teardown list 
 | `.env` | repo root, gitignored |
 | Stack | `udacity-agentcore` — ✅ deployed 2026-09-12 on this account, `CREATE_COMPLETE`. **Real billable resources exist — see `PROJECT_PLAN.md` §16 for the full list + teardown steps.** |
 | Data | seeded 2026-09-12: 4 customers, 15 orders, 6 policy docs |
-| **Status** | Tasks 2 (40/40, [[L13]]), 5 (25/25, [[L14]]), 3 (20/20, [[L15]]) done — cumulative 85/120. Next: Task 4 (Memory) or Task 6 (Observability). |
+| **Status** | Tasks 2 (40/40, [[L13]]), 5 (25/25, [[L14]]), 3 (20/20, [[L15]]), 4 (15/15, [[L16]]) done — cumulative 100/120. Next: Task 6 (Observability), then M7 end-to-end proof + X-Ray screenshot. |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown

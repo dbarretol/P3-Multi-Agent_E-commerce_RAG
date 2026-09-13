@@ -313,24 +313,37 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 
 **File:** `src/agent_orchestrator.py` · **Test:** `python tests/test_agent.py task4`
 
+> **Status: ✅ DONE (2026-09-12).** Real memory resource `udacity_agentcore_memory-yX3G4HDqFe`, `ACTIVE`,
+> `SUMMARIZATION` strategy `session_summary` active, `eventExpiryDuration=7`.
+>
+> **Test-harness quirk found:** `python tests/test_agent.py task4` run **alone** fails with
+> `'BedrockAgentCore' object has no attribute 'get_agent_runtime'`. Cause: only `TestTask2.setUp` does
+> `import agent_orchestrator as ao`, which is what triggers the pre-written compat patch
+> (`_register_agentcore_compat_methods()`) that adds `get_agent_runtime` to the raw `bedrock-agentcore`
+> boto3 client. `TestTask4.setUp` never imports `agent_orchestrator` at all — it only works when task2's
+> tests already ran earlier in the **same process** (i.e. via `python tests/test_agent.py all`, which is
+> also the actual grading invocation). Not a bug in the implementation — just don't trust `task4` (or
+> likely `task3`/`task6`, same mechanism) run in isolation; always confirm via `all`.
+
 ### `configure_memory(runtime_arn)` → `memoryArn`
-- [ ] `agentcore_control.create_memory(...)`:
+- [x] `agentcore_control.create_memory(...)`:
       - `name` = `config.MEMORY_NAMESPACE` (hyphens→underscores, starter does this), `description`
       - `eventExpiryDuration=7` (7-day retention)
-      - `memoryStrategies=[{ 'summaryMemoryStrategy': { 'name': …, 'namespaces': [...] } }]` (SESSION_SUMMARY strategy)
-      - `clientToken=` a stable string for idempotency
-- [ ] return `memoryArn`
-- (starter short-circuits if a memory with that prefix already exists)
+      - `memoryStrategies=[{ 'summaryMemoryStrategy': { 'name': 'session_summary', 'namespaces': ['/summaries/{sessionId}'] } }]`
+      - `memoryExecutionRoleArn=config.AGENTCORE_ROLE_ARN` (optional per the API, included so the summarization strategy has permissions to invoke Bedrock)
+      - `clientToken=memory_name` for idempotency
+- [x] return `memoryArn`
+- (starter short-circuits if a memory with that prefix already exists — verified idempotent on a second `deploy` run)
 
-### Milestone M5 — verification
-`python tests/test_agent.py task4` → **15/15** — `get_agent_runtime(...).memoryConfiguration.enabledMemoryTypes` contains `SESSION_SUMMARY`
-(the deploy pipeline Step 4/6 calls this; re-run `deploy` if you implemented it after the first deploy)
+### Milestone M5 — verification ✅ PASSED (2026-09-12)
+- `python tests/test_agent.py all` → Task 4 section **15/15** (see quirk note above for why `task4` alone fails)
+- Live-verified via `get-memory`: `status=ACTIVE`, strategy `session_summary` type `SUMMARIZATION` status `ACTIVE`, `eventExpiryDuration=7`
+- Took ~90s from `CREATING` to `ACTIVE` after `create_memory()` returned — real backend provisioning delay, not an error
 
-### Evidence to collect
-- **E5.1** Terminal capture: `python tests/test_agent.py task4` = `15/15`
-- **E5.2** Terminal capture: deploy pipeline "Step 4/6: Configuring Memory…" line + returned memory ARN
-- **E5.3** Console screenshot: Bedrock AgentCore → Memory resource showing `SESSION_SUMMARY` strategy + 7-day expiry
-- **E5.4** `git diff` of `configure_memory()`
+### Evidence collected → `docs/evidence/04-memory/`
+- **E5.1** ✅ `E5.1-task4-score-within-all.txt` — Task 4 section = `15/15` (from a full `test_agent.py all` run)
+- **E5.2** ✅ `E5.2-deploy-step4-memory.txt` — deploy pipeline "Step 4/6: Configuring Memory…" line + memory ARN (idempotent re-run, correctly reused)
+- **E5.3** ✅ `E5.3-memory-resource-detail.txt` — `aws bedrock-agentcore-control get-memory` full detail: `SUMMARIZATION` strategy + 7-day expiry (CLI capture in lieu of console screenshot)
 
 ---
 
@@ -500,14 +513,15 @@ so nothing is left running by accident.
 | AgentCore Runtime | `udacity_agentcore_runtime` (`arn:aws:bedrock-agentcore:us-east-1:187021010483:runtime/udacity_agentcore_runtime-fh9FZwA4FY`) | `deploy_to_agentcore_runtime()` via `deploy`, 2026-09-12 |
 | Runtime artifact | `s3://udacity-agentcore-policy-docs-187021010483-3153d8d0/agentcore-artifacts/udacity_agentcore_runtime/deployment.zip` (small placeholder zip; removed when the policy-docs bucket is emptied in teardown step 1) | same |
 | **AgentCore Gateway** | `novamart-support-3153d8d0` (id `novamart-support-3153d8d0-aypt2f6im2`) — pre-written Step 6/6 of `deploy_all()`, not part of the graded rubric, but a **real resource** | `deploy_agentcore_gateway()` via `deploy`, 2026-09-12 (its 3 Lambda targets failed to register — no Lambda functions deployed — so the gateway itself exists but has no working targets) |
+| AgentCore Memory | `udacity_agentcore_memory-yX3G4HDqFe` (`SUMMARIZATION` strategy `session_summary`, 7-day expiry) | `configure_memory()` via `deploy`, 2026-09-12 |
 
 > Note: the CFN template's `VectorStoreBucket` (plain S3) is **not** used by these KBs — S3 Vectors
 > "vector buckets" are a separate resource type/ARN namespace from regular S3 buckets, so a real
 > `s3vectors:create-vector-bucket` call was required. `VectorStoreBucket` is currently unused; harmless
 > to leave (removed automatically when the CFN stack is deleted) but not part of the KB teardown below.
 
-### Not yet created (will be added as later tasks land — update this table when they are)
-- Task 4: AgentCore Memory resource
+### Not yet created
+- Task 6 (Observability) doesn't create a new resource — it configures logging/tracing on the existing runtime.
 
 ### Teardown procedure (run when the project is fully done, or to pause and stop billing)
 CloudFormation **will not delete non-empty S3 buckets**, and both buckets have versioning enabled, so
@@ -542,7 +556,7 @@ aws s3vectors delete-vector-bucket --vector-bucket-name "$VB" --region us-east-1
 #    NONE of these are part of the CFN stack and won't be removed by it.
 aws bedrock-agentcore-control delete-gateway --gateway-identifier novamart-support-3153d8d0-aypt2f6im2 --region us-east-1
 aws bedrock-agentcore-control delete-agent-runtime --agent-runtime-id udacity_agentcore_runtime-fh9FZwA4FY --region us-east-1
-# aws bedrock-agentcore-control delete-memory --memory-id <id> --region us-east-1   # once Task 4 creates one
+aws bedrock-agentcore-control delete-memory --memory-id udacity_agentcore_memory-yX3G4HDqFe --region us-east-1
 aws bedrock delete-guardrail --guardrail-identifier mnsou98agg5p --region us-east-1
 
 # 5. Delete the CloudFormation stack (removes DynamoDB tables, both plain S3 buckets, IAM role, log group)
