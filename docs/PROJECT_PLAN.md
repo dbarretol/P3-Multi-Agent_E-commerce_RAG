@@ -607,6 +607,31 @@ aws bedrock-agent list-knowledge-bases --region us-east-1                       
 Keep the `.env` KB IDs / runtime ARN / guardrail ID around even after teardown (for the record of what
 was built), but they'll no longer resolve to live resources once steps 2–5 run.
 
+### ✅ Teardown executed — 2026-09-12 20:0x UTC-5 (paused between sessions)
+
+Ran the exact procedure above end-to-end. Verified via live API calls afterward:
+- CloudFormation stack `udacity-agentcore` — **deleted** (`describe-stacks` → `does not exist`)
+- Both S3 buckets (policy-docs, plain-S3 vectors) — **gone** (`aws s3 ls` shows no `udacity-agentcore-*`)
+- S3 Vectors vector bucket + 3 indexes — **gone** (`list-vector-buckets` → `[]`)
+- 3 Bedrock Knowledge Bases — **gone** (`list-knowledge-bases` → `[]`)
+- AgentCore Gateway — **gone** (`GetGateway` → `ResourceNotFoundException`)
+- AgentCore Runtime — **gone** (`GetAgentRuntime` → `ResourceNotFoundException`)
+- Bedrock Guardrail — **gone** (`GetGuardrail` → `ResourceNotFoundException`)
+- DynamoDB tables (orders/customers/workflow-state) — **gone** (`list-tables` → `[]`, removed with the CFN stack)
+- AgentCore Memory — still showed `status: DELETING` at verification time (async, no further billing while deleting; will finish on its own)
+
+**Cost check before teardown** (via `aws ce get-cost-and-usage`, month-to-date): effectively **$0.00** —
+all line items were sub-cent free-tier noise. Note Cost Explorer lags ~24-48h and is `Estimated`, so the
+last 1-2 days of usage (the resources just deleted) may not have fully posted yet; the true total should
+still land well under $1 given the resource types and scale involved.
+
+**To resume:** re-run the full `deploy` flow from `agent_orchestrator.py` (CFN stack → seed data → S3
+Vectors + KBs via CLI → guardrail/runtime/memory via `deploy`) to recreate everything with fresh IDs/ARNs,
+then update `.env` with the new values (the ones currently in `.env` are stale pointers to deleted
+resources, kept only as a historical record of what was built — see note above). The KB creation steps
+(Task 5) and X-Ray Service Map screenshot (M7/D4) both require manual AWS Console steps that the user
+will perform and screenshot themselves next session — see [[L14]] and [[L18]].
+
 ---
 
 ## 17. Git workflow note (2026-09-12)

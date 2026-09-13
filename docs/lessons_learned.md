@@ -645,3 +645,42 @@ Service Map visibility, not just correct trace nesting.
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
 > and L11 account switch. Kept the correction here rather than silently rewriting history.
+
+---
+
+## L19 — 2026-09-12: Investigated console-manual observability config, checked real AWS cost, tore down all infra for a pause
+
+Three small, separate threads before pausing work:
+
+1. **Is Task 6 achievable manually via the console, if not via API?** Investigated AWS's own
+   `observability-configure.html` doc directly (not the SDK). Confirmed there genuinely is a
+   console-only "Tracing" pane on the Agent Runtime detail page (Edit → Enable → Save) that isn't backed
+   by any API in `bedrock-agentcore-control` — AWS's own CDK issue tracker confirms delivery-source/
+   destination APIs are documented as "only applicable for memory and gateway resources," runtime tracing
+   is console-exclusive. This is real and would enable genuine tracing infrastructure, but **cannot**
+   move `test_agent.py task6`'s score, because that test calls
+   `get_agent_runtime_logging_configuration()` directly against the live client - a method confirmed to
+   not exist in any of ~2,500 published botocore releases, nor in AWS's public API docs. Cross-checked
+   the actual rubric text (not just the test script) from the assignment's `8.md`: one Task 6 bullet
+   ("`configure_observability()` calls `put_agent_runtime_logging_configuration()`") is a **code-
+   authorship** criterion our code already satisfies; the other ("`test_agent.py task6` passes") is
+   confirmed impossible for any submission, since Udacity reviewers grade from submitted code/screenshots
+   and cannot run the live test against a student's own AWS account anyway. Recommended path: report the
+   course bug via Udacity's mentor/Knowledge channel with this evidence, not fabricate a passing test.
+
+2. **Real AWS cost check.** `aws ce get-cost-and-usage` (month-to-date) showed **effectively $0.00** -
+   every line item was sub-cent free-tier noise. Caveat: Cost Explorer lags ~24-48h and marks recent days
+   `"Estimated": true`, so the last 1-2 days' usage may not be fully posted. Also discovered the shell's
+   default `~/.aws/credentials` holds a stale/invalid key different from the project's `.env` key -
+   `aws` CLI calls must explicitly source `.env` (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`) rather than
+   relying on the ambient shared-credentials file, or they fail with `InvalidClientTokenId`.
+
+3. **Full teardown, on request, to pause the project without ongoing billing risk.** Executed the
+   documented §16 procedure exactly: emptied both versioned S3 buckets, deleted the 3 KBs, deleted the
+   S3 Vectors indexes + vector bucket, deleted the Gateway/Runtime/Memory/Guardrail, deleted the CFN
+   stack, then verified every resource gone via live `get`/`list`/`describe` calls (Memory alone still
+   showed `DELETING` at verification time - normal, async, no further billing). `.env`'s KB IDs/runtime
+   ARN/guardrail ID are now stale pointers kept only as a historical record - see updated
+   `PROJECT_PLAN.md` §16. On resume: re-run the full deploy flow to get fresh IDs, update `.env`, and the
+   user will take the Task 5 KB-creation and M7 X-Ray-Service-Map screenshots manually in their own AWS
+   Console session (not via browser automation - see the repeated redirect on that in this session).
