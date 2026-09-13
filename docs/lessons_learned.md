@@ -619,7 +619,7 @@ Two dead ends before the fix landed, both instructive:
 
 **Result, verified in the X-Ray console/API:** `OrchestratorAgent` (root) connected to 3 real edges -
 `InventoryAgent`, `RefundAgent`, `CommunicationAgent` - each with real durations from an actual live run
-against a real seeded order. Saved as `docs/evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`
+against a real seeded order. Saved as `evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`
 (kept `E7.3-xray-attempt-empty.txt` alongside it as the honest record of the failed native-path attempt).
 
 **Takeaway for anything X-Ray/tracing-related with the Strands Agents SDK going forward:** never rely on
@@ -945,7 +945,7 @@ edited the script's hardcoded scenario to use it, and re-ran: same realistic "re
 expired" outcome as [[L13]]'s original live-chain proof, now with a **real, fresh, connected trace**
 (`1-6aa622af-...`) verified via `batch-get-traces` (correctly nested `remote` subsegments) and
 `get-service-graph` (OrchestratorAgent connected to all 3 workers). Overwrote
-`docs/evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json` with the fresh graph.
+`evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json` with the fresh graph.
 
 **Process note - a self-caught mistake:** while regenerating that evidence file, an overly broad cleanup
 command (`rm E7.3-xray-attempt-empty.txt`) deleted a *different*, deliberately-kept historical-record file
@@ -973,7 +973,7 @@ their own AWS Console session (including a screenshot of the now-`ACTIVE` Transa
 
 ---
 
-## L24 — 2026-09-13: Re-read the full project instructions (not just the rubric), found there's only one required screenshot, reorganized `docs/evidence/`
+## L24 — 2026-09-13: Re-read the full project instructions (not just the rubric), found there's only one required screenshot, reorganized `evidence/`
 
 User took 6 screenshots after [[L23]] and asked whether each was correct. Reviewed each with the Read
 tool (not browser automation - these were static image files already saved to disk, no console access
@@ -1024,7 +1024,7 @@ is narrower than the working evidence-collection habit built up over the project
   the X-Ray Service Map bullet under "Demonstrate end-to-end distributed tracing via X-Ray Service Map."
 
 **Nothing in the course or rubric asks for Transaction Search, the Runtime Tracing-pane toggle, the
-CloudWatch log group, or a KB list screenshot.** All the `docs/evidence/00-setup/` through `07-e2e/`
+CloudWatch log group, or a KB list screenshot.** All the `evidence/00-setup/` through `07-e2e/`
 snapshot files this project accumulated (test scores, deploy output, diffs, etc.) are *our own* internal
 audit trail per `PROJECT_PLAN.md`'s tracking habit, not something the rubric or course instructions ever
 requested as separate submission artifacts. Worth remembering for future projects: build an evidence
@@ -1038,16 +1038,16 @@ One honest non-screenshot caveat found in the same re-read: `6.md`/`8.md` both s
 worth redoing, but it's a literal-instruction deviation worth being aware of, distinct from anything
 screenshot-related.
 
-**Reorganized `docs/evidence/` accordingly**, so a reviewer can find the one required artifact without
+**Reorganized `evidence/` accordingly**, so a reviewer can find the one required artifact without
 wading through internal notes:
-- `docs/evidence/required/` - contains only `D4-xray-service-map.png` (screenshot #1 above, renamed) and
+- `evidence/required/` - contains only `D4-xray-service-map.png` (screenshot #1 above, renamed) and
   a `README.md` citing the exact rubric/instruction lines it satisfies.
-- `docs/evidence/additional-info/` - everything else: all of `00-setup/` through `07-e2e/` (git-mv'd,
+- `evidence/additional-info/` - everything else: all of `00-setup/` through `07-e2e/` (git-mv'd,
   history preserved) plus screenshots #2/#4/#5/#6 (renamed descriptively, moved under
   `additional-info/screenshots/`).
-- Added `docs/evidence/README.md` explaining the split and flagging that most `additional-info/` `.txt`/
+- Added `evidence/README.md` explaining the split and flagging that most `additional-info/` `.txt`/
   `.diff` snapshots were captured against the **first** deployment (suffix `3153d8d0`, torn down in
   [[L19]]) and won't match the current live resource IDs (suffix `5b82cc40`, [[L23]]) - they still
   accurately prove each task passed at the time, just not against today's live ARNs. Updated every
-  `docs/evidence/00-setup/...` through `07-e2e/...` path reference in `PROJECT_PLAN.md` and this file to
+  `evidence/00-setup/...` through `07-e2e/...` path reference in `PROJECT_PLAN.md` and this file to
   the new `additional-info/` prefix.
