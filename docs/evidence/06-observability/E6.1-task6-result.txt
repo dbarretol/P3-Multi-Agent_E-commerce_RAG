@@ -1,0 +1,15 @@
+
+[1m[96m───────────────────────────────────────────────────────[0m
+[1m[96m  Task 6 - Observability[0m
+[1m[96m───────────────────────────────────────────────────────[0m
+  [91m✗ FAIL[0m [+10pts] Error checking CloudWatch config
+         [93m'BedrockAgentCoreControl' object has no attribute 'get_agent_runtime_logging_configuration'[0m
+  [91m✗ FAIL[0m [+10pts] Error checking X-Ray config
+         [93m'BedrockAgentCoreControl' object has no attribute 'get_agent_runtime_logging_configuration'[0m
+
+═══════════════════════════════════════════════════════
+  [1mScore: [91m0/20 pts (0%)[0m
+═══════════════════════════════════════════════════════
+
+  [91mKeep going - re-read the TODO comments carefully.[0m
+

@@ -1,0 +1,29 @@
+=== WorkflowState record for the refund-flow smoke test (session d5036342) ===
+{
+    "Item": {
+        "communication_agent": {
+            "S": "Dear Bob,\n\nThank you for contacting NovaMart regarding your Desk Lamp LED from order ORD-91987.\n\nI've reviewed your order and unfortunately, I have to share some disappointing news. **Your order is not eligible for return at this time.**\n\n**Here's what I found:**\n\n- **Order Number:** ORD-91987\n- **Product:** Desk Lamp LED ($29.99)\n- **Order Date:** June 28, 2026\n- **Status:** Delivered\n- **Your Account Tier:** Standard (30-day return window)\n\nAs a Standard tier customer, you have 30 days from the order date to initiate a return. Since your order was placed on June 28, 2026, the return window has now expired, which is why the system has flagged this order as ineligible for return.\n\n**That said, we want to help:**\n\nIf there are special circumstances—such as the lamp being defective, damaged, or if there were other issues that prevented you from returning it within the standard timeframe—please let me know the details. I'd be happy to escalate your case to a supervisor who can review your situation for possible special consideration.\n\nWe truly value your business (I can see you've been a loyal customer with 12 orders since 2022!), and we want to make sure you're satisfied with your purchase.\n\nPlease feel free to reply with any additional information, and I'll do my best to assist you further.\n\nWarm regards,  \nNovaMart Customer Support Team\n"
+        },
+        "created_at": {
+            "S": "2026-09-12T23:35:45Z"
+        },
+        "customer_id": {
+            "S": "CUST-002"
+        },
+        "inventory_agent": {
+            "S": "Here are the relevant facts I found for customer CUST-002's request:\n\n**Order Details (ORD-91987):**\n- Product: Desk Lamp LED\n- Order Date: 2026-06-28\n- Status: Delivered\n- Price: $29.99\n- Quantity: 1\n- Product Category: Home\n- Tracking Number: TRK915733850\n- Return Eligible Flag: **false**\n\n**Customer Details (CUST-002):**\n- Name: Bob Martinez\n- Tier: Standard\n- Account Created: 2022-08-01\n- Total Orders: 12\n\nThe order exists, matches the customer ID, and is for the Desk Lamp LED as mentioned. The system shows the return_eligible flag as \"false\" for this order. The customer has a Standard tier account.\n"
+        },
+        "refund_agent": {
+            "S": "Based on the order information retrieved, I need to inform you that **order ORD-91987 is NOT ELIGIBLE for return**.\n\nHere's why:\n\n**Order Details:**\n- Order Date: June 28, 2026\n- Customer Tier: Standard (30-day return window)\n- Status: Delivered\n\nAs a Standard tier customer, you have a 30-day return window from the order date. Since your order was placed on June 28, 2026, the return window has expired. The system has flagged this order as not eligible for return.\n\n**Return Policy Summary:**\n- Standard customers: 30-day return window\n- Premium customers: 60-day return window\n\nIf you believe there are extenuating circumstances (such as a defective product or other issues), please let me know and I can escalate your case to a supervisor for special consideration.\n"
+        },
+        "session_id": {
+            "S": "d5036342"
+        },
+        "ttl": {
+            "N": "1789342545"
+        },
+        "version": {
+            "N": "3"
+        }
+    }
+}

@@ -1,0 +1,43 @@
+=== Ingestion job / sync history ===
+{
+    "kb": "HAEAIOJU2M",
+    "status": "COMPLETE",
+    "stats": {
+        "numberOfDocumentsScanned": 2,
+        "numberOfMetadataDocumentsScanned": 0,
+        "numberOfNewDocumentsIndexed": 2,
+        "numberOfModifiedDocumentsIndexed": 0,
+        "numberOfMetadataDocumentsModified": 0,
+        "numberOfDocumentsDeleted": 0,
+        "numberOfDocumentsFailed": 0,
+        "numberOfDocumentsSkipped": 0
+    }
+}
+{
+    "kb": "HNTEB2KQRZ",
+    "status": "COMPLETE",
+    "stats": {
+        "numberOfDocumentsScanned": 2,
+        "numberOfMetadataDocumentsScanned": 0,
+        "numberOfNewDocumentsIndexed": 2,
+        "numberOfModifiedDocumentsIndexed": 0,
+        "numberOfMetadataDocumentsModified": 0,
+        "numberOfDocumentsDeleted": 0,
+        "numberOfDocumentsFailed": 0,
+        "numberOfDocumentsSkipped": 0
+    }
+}
+{
+    "kb": "ATZZEIJG1P",
+    "status": "COMPLETE",
+    "stats": {
+        "numberOfDocumentsScanned": 2,
+        "numberOfMetadataDocumentsScanned": 0,
+        "numberOfNewDocumentsIndexed": 2,
+        "numberOfModifiedDocumentsIndexed": 0,
+        "numberOfMetadataDocumentsModified": 0,
+        "numberOfDocumentsDeleted": 0,
+        "numberOfDocumentsFailed": 0,
+        "numberOfDocumentsSkipped": 0
+    }
+}

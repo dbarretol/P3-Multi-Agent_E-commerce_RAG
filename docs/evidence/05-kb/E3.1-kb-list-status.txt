@@ -1,0 +1,28 @@
+=== Knowledge Base list (status) ===
+{
+    "id": "HAEAIOJU2M",
+    "name": "novamart-returns-policy-kb",
+    "status": "ACTIVE",
+    "embeddingModel": "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0",
+    "storageType": "S3_VECTORS",
+    "vectorBucket": "arn:aws:s3vectors:us-east-1:187021010483:bucket/udacity-agentcore-vectors-187021010483",
+    "indexName": "returns-index"
+}
+{
+    "id": "HNTEB2KQRZ",
+    "name": "novamart-shipping-policy-kb",
+    "status": "ACTIVE",
+    "embeddingModel": "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0",
+    "storageType": "S3_VECTORS",
+    "vectorBucket": "arn:aws:s3vectors:us-east-1:187021010483:bucket/udacity-agentcore-vectors-187021010483",
+    "indexName": "shipping-index"
+}
+{
+    "id": "ATZZEIJG1P",
+    "name": "novamart-warranty-policy-kb",
+    "status": "ACTIVE",
+    "embeddingModel": "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0",
+    "storageType": "S3_VECTORS",
+    "vectorBucket": "arn:aws:s3vectors:us-east-1:187021010483:bucket/udacity-agentcore-vectors-187021010483",
+    "indexName": "warranty-index"
+}

@@ -1,0 +1,15 @@
+{
+    "name": "udacity_agentcore_runtime",
+    "status": "READY",
+    "networkMode": "PUBLIC",
+    "protocol": "MCP",
+    "envVars": {
+        "AGENT_LOG_GROUP": "/aws/bedrock/agentcore/udacity-agentcore",
+        "AWS_REGION": "us-east-1",
+        "PROJECT_NAME": "udacity-agentcore",
+        "RETURNS_KB_ID": "HAEAIOJU2M",
+        "SHIPPING_KB_ID": "HNTEB2KQRZ",
+        "WARRANTY_KB_ID": "ATZZEIJG1P"
+    },
+    "roleArn": "arn:aws:iam::187021010483:role/udacity-agentcore-agentcore-role"
+}

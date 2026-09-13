@@ -1,0 +1,14 @@
+
+[1m[96m───────────────────────────────────────────────────────[0m
+[1m[96m  Task 3 - AgentCore Deployment + Guardrails[0m
+[1m[96m───────────────────────────────────────────────────────[0m
+  [92m✓ PASS[0m [+10pts] Guardrail 'udacity-agentcore-guardrail' exists in Bedrock
+  [92m✓ PASS[0m [+5pts] Guardrail has content, PII, and topic policies
+  [92m✓ PASS[0m [+5pts] AGENTCORE_RUNTIME_ARN is set in environment
+
+═══════════════════════════════════════════════════════
+  [1mScore: [92m20/20 pts (100%)[0m
+═══════════════════════════════════════════════════════
+
+  [92m[1m🎉 Perfect score! All tasks complete.[0m
+

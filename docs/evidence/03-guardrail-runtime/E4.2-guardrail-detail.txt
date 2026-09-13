@@ -1,0 +1,92 @@
+=== Guardrail detail ===
+{
+    "name": "udacity-agentcore-guardrail",
+    "version": "1",
+    "status": "READY",
+    "contentPolicy": {
+        "filters": [
+            {
+                "type": "VIOLENCE",
+                "inputStrength": "HIGH",
+                "outputStrength": "HIGH"
+            },
+            {
+                "type": "MISCONDUCT",
+                "inputStrength": "MEDIUM",
+                "outputStrength": "MEDIUM"
+            },
+            {
+                "type": "HATE",
+                "inputStrength": "HIGH",
+                "outputStrength": "HIGH"
+            },
+            {
+                "type": "SEXUAL",
+                "inputStrength": "HIGH",
+                "outputStrength": "HIGH"
+            },
+            {
+                "type": "INSULTS",
+                "inputStrength": "MEDIUM",
+                "outputStrength": "MEDIUM"
+            }
+        ],
+        "tier": {
+            "tierName": "CLASSIC"
+        }
+    },
+    "sensitiveInformationPolicy": {
+        "piiEntities": [
+            {
+                "type": "CREDIT_DEBIT_CARD_NUMBER",
+                "action": "BLOCK"
+            },
+            {
+                "type": "US_SOCIAL_SECURITY_NUMBER",
+                "action": "BLOCK"
+            },
+            {
+                "type": "EMAIL",
+                "action": "ANONYMIZE"
+            },
+            {
+                "type": "PHONE",
+                "action": "ANONYMIZE"
+            }
+        ],
+        "regexes": []
+    },
+    "topicPolicy": {
+        "topics": [
+            {
+                "name": "Competitor Products",
+                "definition": "Requests that mention, compare, or promote competitor products, brands, or services instead of NovaMart.",
+                "examples": [],
+                "type": "DENY"
+            },
+            {
+                "name": "Pricing Negotiations",
+                "definition": "Attempts to negotiate prices, request discounts outside published promotions, or haggle over the cost of products or services.",
+                "examples": [],
+                "type": "DENY"
+            },
+            {
+                "name": "Legal Threats",
+                "definition": "Statements threatening legal action, lawsuits, regulatory complaints, or referencing an attorney in connection with the interaction.",
+                "examples": [],
+                "type": "DENY"
+            }
+        ],
+        "tier": {
+            "tierName": "CLASSIC"
+        }
+    },
+    "wordPolicy": {
+        "words": [],
+        "managedWordLists": [
+            {
+                "type": "PROFANITY"
+            }
+        ]
+    }
+}
