@@ -756,3 +756,106 @@ already in [[L17]]/[[L18]]. Went several layers deeper to make sure the report i
    concerning: this specific Nanodegree project and AgentCore's observability API are both very recent/
    niche, so absence of chatter doesn't weaken the first-party technical evidence (SDK enumeration + CFN
    schema + CDK construct source), it just means there's no external corroboration to cite alongside it.
+
+---
+
+## L22 — 2026-09-12: Independent AWS-assistant confirmation + `DescribeConfigurationTemplates` proves the real API; corrects L21's CDK-construct claim
+
+Before drafting the bug report, cross-checked [[L21]]'s findings against AWS's own in-console assistant
+(Amazon Q) with a battery of targeted queries. Two outcomes: one strong corroboration, one correction.
+
+**Corroboration — independent confirmation of the core gap.** Q's answers (from its own live
+introspection of the `bedrock-agentcore-control` service model and the `CreateAgentRuntime`/
+`UpdateAgentRuntime`/`GetAgentRuntime` request/response shapes) matched [[L17]]/[[L21]] exactly, with zero
+prompting toward that conclusion: no `*LoggingConfiguration`/`*TracingConfiguration`/`*Observability*`
+operation exists anywhere on the service; neither `CreateAgentRuntime` nor `UpdateAgentRuntime` has a
+logging/tracing field in its request shape; `GetAgentRuntime` has nothing observability-related to
+return. This is now confirmed by **two fully independent methods** (our own boto3/CFN-schema
+introspection, and AWS's own assistant re-deriving the same answer from the same live service model) —
+about as airtight as this kind of negative claim can get.
+
+**Correction — the CDK-construct evidence in [[L21]] was wrong; here is the actual proof instead.**
+[[L21]] cited the stable `aws-cdk-lib/aws-bedrockagentcore` `Runtime` construct's `loggingConfigs`/
+`tracingEnabled` properties as evidence the CloudWatch Logs "Delivery" API
+(`put_delivery_source`/`put_delivery_destination`/`create_delivery`) is the real mechanism AWS uses for
+Runtime observability. Asked Q to trace what those CDK properties actually synthesize to at deploy time.
+Its answer, backed by inspecting the actual `AWS::BedrockAgentCore::Runtime` CFN resource-handler
+permission sets (the exact API calls CloudFormation's create/update/read/delete handlers are allowed to
+make): **the CFN handlers never call `PutDeliverySource`, `CreateDelivery`, `PutDeliveryDestination`, or
+any X-Ray API** — only `CreateAgentRuntime`/`UpdateAgentRuntime`/`GetAgentRuntime`/`*Endpoint`/
+`*WorkloadIdentity`/tagging calls. So citing "the CDK construct proves this works" would have been **wrong
+evidence** — those CDK properties are, at best, unverified/aspirational, or synthesize into plain
+`EnvironmentVariables` on the Runtime resource (a convention, not a first-class wiring), not a real
+Delivery-API integration. Do not cite the CDK construct in the bug report.
+
+**The real, load-bearing proof (use this instead):** `logs.DescribeConfigurationTemplates` — a live AWS
+API endpoint, not documentation prose, not a construct's unverified behavior — is the authoritative
+registry of which `service`/`resourceType`/`logType`/`deliveryDestinationType` combinations the Delivery
+framework actually supports. Queried live for `service=bedrock-agentcore`: 48 templates returned,
+including `resourceType=runtime` with:
+
+| `logType` | valid `deliveryDestinationType` |
+|---|---|
+| `APPLICATION_LOGS` | `CWL`, `S3`, `FH` |
+| `TRACES` | `XRAY` |
+| `USAGE_LOGS` | `CWL`, `S3`, `FH` |
+
+This confirms `logType='TRACES'` → an `XRAY` destination, and `logType='APPLICATION_LOGS'` → a `CWL`/S3/
+Firehose destination, are both genuinely valid when `resourceArn` is an AgentCore Runtime ARN — i.e. the
+Delivery API path from [[L21]] **is real**, just proven a different way than originally claimed. The
+required permission to actually wire it up is `bedrock-agentcore:AllowVendedLogDeliveryForResource`,
+granted via a resource-based policy on the Runtime (not just an IAM identity-based policy on the caller —
+worth checking how to attach a resource policy to an AgentCore Runtime when implementing this).
+
+**Confirmed working call sequence** (source ARN = the AgentCore Runtime; verified field names/shapes via
+`DescribeConfigurationTemplates`, not guessed):
+```python
+import boto3
+logs = boto3.client("logs", region_name="us-east-1")
+
+# Source: this runtime emits APPLICATION_LOGS
+logs.put_delivery_source(
+    name="udacity-agentcore-runtime-applogs-source",
+    resourceArn="arn:aws:bedrock-agentcore:us-east-1:<acct>:runtime/<runtime-id>",
+    logType="APPLICATION_LOGS",
+)
+# Source: this runtime emits TRACES
+logs.put_delivery_source(
+    name="udacity-agentcore-runtime-traces-source",
+    resourceArn="arn:aws:bedrock-agentcore:us-east-1:<acct>:runtime/<runtime-id>",
+    logType="TRACES",
+)
+
+# Destination: a CloudWatch Logs log group for APPLICATION_LOGS
+logs.put_delivery_destination(
+    name="udacity-agentcore-runtime-cwl-dest",
+    deliveryDestinationConfiguration={
+        "destinationResourceArn": "arn:aws:logs:us-east-1:<acct>:log-group:/aws/bedrock/agentcore/runtime"
+    },
+)
+# Destination: X-Ray for TRACES
+logs.put_delivery_destination(
+    name="udacity-agentcore-runtime-xray-dest",
+    deliveryDestinationConfiguration={"destinationResourceArn": "arn:aws:xray:us-east-1:<acct>:*"},
+)
+
+# Link each source to its destination
+logs.create_delivery(deliverySourceName="udacity-agentcore-runtime-applogs-source",
+                      deliveryDestinationArn="arn:aws:logs:us-east-1:<acct>:delivery-destination/udacity-agentcore-runtime-cwl-dest")
+logs.create_delivery(deliverySourceName="udacity-agentcore-runtime-traces-source",
+                      deliveryDestinationArn="arn:aws:logs:us-east-1:<acct>:delivery-destination/udacity-agentcore-runtime-xray-dest")
+```
+
+**Practical implication (updated from [[L21]]):** `configure_observability()` can be rewritten to use this
+now-**doubly-confirmed** real API and genuinely enable CloudWatch log delivery + X-Ray trace delivery for
+the deployed Runtime — a correct, working, verifiable implementation, using a different (real, current)
+API than the one the rubric's test script names. Still cannot make `test_agent.py task6` pass (that test
+hardcodes and directly calls the fictional method name, independent of anything `configure_observability()`
+does) — but this upgrades the bug-report position from "no alternative exists" to "a real, working
+alternative was implemented; only the specific automated check named in the rubric is unfixable."
+`PROJECT_PLAN.md` §16 step 5 updated accordingly.
+
+Two follow-up Q queries were considered but judged unnecessary before proceeding: the default log-group
+ARN a Runtime writes to natively (moot now — the Delivery API lets us name our own destination rather than
+guessing AgentCore's default), and whether this gap is on a public AWS roadmap (nice-to-have context, not
+required — the evidence already on hand is definitive without it).

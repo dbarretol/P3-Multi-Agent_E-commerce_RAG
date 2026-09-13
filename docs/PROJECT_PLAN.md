@@ -654,22 +654,36 @@ After redeploying, do these **in order**, before calling the project done again:
      → Save
    - Take a screenshot of the enabled Tracing toggle as supplementary Task 6 evidence.
 5. **Implement the *real* observability API in `configure_observability()` before redeploying again** —
-   deeper research (2026-09-12, see [[L21]]) found the actual current mechanism: the generic CloudWatch
-   Logs "Delivery" API (`logs.put_delivery_source` / `put_delivery_destination` / `create_delivery`),
-   confirmed valid for AgentCore Runtime resourceArns with `logType='APPLICATION_LOGS'` (→ CWL
-   destination) and `logType='TRACES'` (→ XRAY destination) — this is what AWS's own stable, non-alpha
-   `aws-cdk-lib/aws-bedrockagentcore` `Runtime` construct's `loggingConfigs`/`tracingEnabled` props
-   actually call under the hood. Rewrite `configure_observability()` to call this real API (on the `logs`
-   client, not `bedrock-agentcore-control`) so the function does something genuinely correct and
-   verifiable, instead of a doomed call to a method that was never shipped. This **still won't make
-   `test_agent.py task6` pass** (it hardcodes the fictional method name) but makes the actual
-   infrastructure outcome (CloudWatch logs + X-Ray traces really flowing for the runtime) genuinely real.
+   ✅ **doubly confirmed real** (2026-09-12, see [[L21]] + [[L22]]): the generic CloudWatch Logs "Delivery"
+   API (`logs.put_delivery_source` / `put_delivery_destination` / `create_delivery`). Ground-truth proof is
+   `logs.DescribeConfigurationTemplates` for `service=bedrock-agentcore` — a **live API response**, not
+   prose or a construct's assumed behavior — which lists `resourceType=runtime` supporting
+   `logType='APPLICATION_LOGS'` → `CWL`/`S3`/`FH` destinations and `logType='TRACES'` → `XRAY` destination.
+   **Correction:** do *not* cite the `aws-cdk-lib/aws-bedrockagentcore` CDK construct as proof this works —
+   [[L22]] found the actual `AWS::BedrockAgentCore::Runtime` CFN resource-handler permission sets make
+   **zero** Delivery-API or X-Ray calls, so the construct's `loggingConfigs`/`tracingEnabled` props are
+   unverified/likely no-ops today. Cite `DescribeConfigurationTemplates` directly instead.
+   Implementation notes for next redeploy:
+   - Required permission: `bedrock-agentcore:AllowVendedLogDeliveryForResource`, granted via a
+     **resource-based policy on the Runtime** (not just an identity policy on the caller) — confirm how to
+     attach this before assuming the calls will succeed.
+   - Exact call sequence (source → destination → link, ×2 for logs and traces) is recorded verbatim in
+     `docs/lessons_learned.md` [[L22]] — use it rather than re-deriving field names.
+   - Rewrite `configure_observability()` to call this real API (on the `logs` client, not
+     `bedrock-agentcore-control`) so the function does something genuinely correct and verifiable, instead
+     of a doomed call to a method that was never shipped. This **still won't make `test_agent.py task6`
+     pass** (it hardcodes the fictional method name, independent of what our code does) but makes the
+     actual infrastructure outcome (CloudWatch logs + X-Ray traces really flowing for the runtime)
+     genuinely real — upgrades the bug-report position from "no alternative exists" to "a real, working
+     alternative was implemented; only the rubric's named automated check is unfixable."
 6. **File the course-bug report with Udacity** (mentor/Knowledge channel, or attached to the submission)
    before or at resubmission time — this is the actual lever for getting the unreachable 20 points
    reconsidered by a human reviewer, since the automated check can never pass for any student. Cites the
-   exact method name confirmed absent from ~2,500 botocore releases, AWS's public API docs, and the
-   `AWS::BedrockAgentCore::Runtime` CloudFormation schema, plus both real mechanisms AWS actually shipped
-   instead (the console-only Tracing toggle, and the `logs` Delivery API above).
+   exact method name confirmed absent from ~2,500 botocore releases, AWS's public API docs, the
+   `AWS::BedrockAgentCore::Runtime` CloudFormation schema, and an independent AWS-assistant (Amazon Q)
+   re-derivation of the same conclusion ([[L22]]) — plus both real mechanisms AWS actually shipped instead
+   (the console-only Tracing toggle, and the `logs` Delivery API confirmed via
+   `DescribeConfigurationTemplates` above — **not** the CDK construct, see the correction in step 5).
 7. **Do not** attempt to mock/monkeypatch the boto3 client so the test appears to pass — confirmed
    dishonest and unnecessary; the correct path is the documented gap + real implementation + bug report
    above.
