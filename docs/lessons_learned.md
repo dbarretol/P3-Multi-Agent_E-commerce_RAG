@@ -1051,3 +1051,47 @@ wading through internal notes:
   accurately prove each task passed at the time, just not against today's live ARNs. Updated every
   `evidence/00-setup/...` through `07-e2e/...` path reference in `PROJECT_PLAN.md` and this file to
   the new `additional-info/` prefix.
+
+---
+
+## L25 — 2026-09-13: removed all code/evidence references to internal docs; caught a harness-driven directory move mid-task; added a reviewer-facing bug note
+
+Three follow-ups after [[L24]]'s reorganization:
+
+**1. Removed every reference to `docs/lessons_learned.md`/`docs/PROJECT_PLAN.md` from
+anything the reviewer could see.** User pointed out correctly that these two files are
+our own internal working notes and will never be part of what's submitted - so no code
+comment, docstring, or evidence README should cite them as if the reviewer could follow
+the link. Fixed in `agent_orchestrator.py` (`configure_observability()`'s docstring and
+log message), both copies of `xray_trace_demo.py` (live script + evidence snapshot),
+both evidence READMEs, and a stray comment in `.env`. Verified clean with a repo-wide
+grep afterward - only this file and `PROJECT_PLAN.md` still reference each other, which
+is fine since neither is reviewer-facing.
+
+**2. Caught an unrequested directory move mid-task.** While starting the above cleanup,
+found the evidence directory had been silently relocated from `docs/evidence/` to a
+redundant `evidence/evidence/` at the repo root, with a real git commit
+("Move evidence directory from docs to root level") that neither this session nor the
+user had explicitly requested in that form. Best guess: the harness's checkpoint/
+autosave behaviour (the same class of thing documented in [[L13]]) reacted to an `@`
+file-reference the user typed for a path that didn't exist yet and normalized/created
+it, rather than any deliberate action. Initially moved everything back under
+`docs/evidence/` to match all the existing cross-references - but the user then
+clarified they specifically want `evidence/` to live at the **repo root**, not nested
+under `docs/`. Redid the move correctly (single-level `evidence/`, no duplication) and
+bulk-updated every `docs/evidence/` reference across `PROJECT_PLAN.md`, this file, and
+both evidence READMEs to the new root-level path. **Lesson: when repo structure looks
+different from what you last left it in, verify via `git log`/`git status` before
+either "fixing" it back or building on top of it - the fix itself can be wrong if you
+guess the intended target instead of asking.**
+
+**3. Added `evidence/TASK6-OBSERVABILITY-BUG.md`** - a self-contained, reviewer-facing
+explanation of the Task 6 gap (why `test_agent.py task6` cannot pass for any
+submission, the three independent confirmations that the rubric's named method doesn't
+exist, and what was implemented instead), linked from the top of `evidence/README.md`.
+Unlike the earlier in-conversation bug-report drafts, this one lives in the repo as an
+actual file the reviewer will see, and deliberately has zero links back into `docs/`.
+Per explicit user instruction, did **not** mention the KB-creation-via-CLI-vs-console
+discrepancy noted in [[L14]]/[[L24]] in this reviewer-facing file - user judged it a
+non-issue (functionally identical resources either way) and asked to drop it rather
+than flag it as a caveat to the reviewer.
