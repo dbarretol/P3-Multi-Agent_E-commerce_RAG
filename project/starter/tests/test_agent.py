@@ -343,29 +343,32 @@ class TestTask3(unittest.TestCase):
 class TestTask4(unittest.TestCase):
 
     def setUp(self):
-        self.agentcore = boto3.client('bedrock-agentcore', region_name=config.AWS_REGION)
+        # get_agent_runtime / memory lookups are control-plane operations -
+        # bedrock-agentcore (data-plane) does not expose them.
+        self.agentcore_control = boto3.client('bedrock-agentcore-control', region_name=config.AWS_REGION)
 
     def test_4_1_memory_is_configured(self):
-        """AgentCore Memory should be enabled on the runtime."""
+        """AgentCore Memory should exist with a SESSION_SUMMARY (SUMMARIZATION) strategy."""
         header("Task 4 - Memory")
         try:
-            runtime_arn = config.AGENTCORE_RUNTIME_ARN
-            if not runtime_arn:
-                check(False, 15, "", "AGENTCORE_RUNTIME_ARN not set - complete Task 3 first")
+            expected_name = config.MEMORY_NAMESPACE.replace('-', '_')
+            memories = self.agentcore_control.list_memories().get('memories', [])
+            match = next((m for m in memories if m.get('id', '').startswith(expected_name)), None)
+            if match is None:
+                check(False, 15, "", "AgentCore Memory is not configured - complete Task 4 first",
+                      f"No memory found with id prefix {expected_name!r}")
                 return
 
-            runtime_id = runtime_arn.split('/')[-1]
-            response = self.agentcore.get_agent_runtime(agentRuntimeId=runtime_id)
-
-            memory_config = response.get('memoryConfiguration', {})
-            memory_enabled = 'SESSION_SUMMARY' in memory_config.get('enabledMemoryTypes', [])
+            detail = self.agentcore_control.get_memory(memoryId=match['id']).get('memory', {})
+            strategies = detail.get('strategies', [])
+            summary_ok = any(s.get('type') == 'SUMMARIZATION' for s in strategies)
 
             check(
-                memory_enabled,
+                summary_ok and detail.get('status') == 'ACTIVE',
                 15,
-                "AgentCore Memory is enabled (SESSION_SUMMARY type)",
-                "AgentCore Memory is not enabled on the runtime",
-                f"Found memoryConfiguration: {memory_config}"
+                f"AgentCore Memory is enabled (SESSION_SUMMARY type, {detail.get('status')})",
+                "AgentCore Memory is not enabled with a SESSION_SUMMARY strategy",
+                f"Found strategies: {strategies}, status: {detail.get('status')}"
             )
         except Exception as e:
             check(False, 15, "", "Error checking memory configuration", str(e))

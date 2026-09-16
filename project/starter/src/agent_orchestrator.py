@@ -1396,7 +1396,7 @@ if __name__ == '__main__':
         )
 
         test_cases = [
-            ("CUST-001", "I want to return my wireless headphones from order ORD-27176"),
+            ("CUST-002", "I want to return my wireless headphones from order ORD-23254"),
             ("CUST-002", "What is the return policy for premium customers?"),
             ("CUST-003", "How much would 5 items at $29.99 be with a 10% discount?"),
         ]
