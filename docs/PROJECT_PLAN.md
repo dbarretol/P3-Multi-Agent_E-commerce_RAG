@@ -114,7 +114,7 @@
 - DynamoDB scan COUNT: customers = 4, orders = 15. S3: 6 policy-doc objects across `policies/returns|shipping|warranty/`.
 - ⚠️ **These are new, billable AWS resources on the personal account.** See **§16 — Active AWS resources / teardown checklist** before considering this project finished.
 
-### Evidence collected → `docs/evidence/00-setup/`
+### Evidence collected → `evidence/additional-info/00-setup/`
 - **E0.1** ✅ `identity-and-stack.txt` — re-collected 2026-09-12 against the new stack/account
 - **E0.2** ✅ `config-py-output.txt` — re-collected 2026-09-12
 - **E0.3** ✅ `bedrock-model-access.txt` — live invoke results for the 3 models, valid on the current (personal) account
@@ -214,7 +214,7 @@
 - Policy scenario's *content* is necessarily generic until Task 5's KBs exist — parallel-dispatch
   mechanics are fully proven now.
 
-### Evidence collected → `docs/evidence/02-agents/`
+### Evidence collected → `evidence/additional-info/02-agents/`
 - **E2.1** ✅ `E2.1-task2-score.txt` — `Score: 40/40 pts (100%)`
 - **E2.2** ✅ `E2.2-full-refund-chain-trace.txt` — full Orchestrator → Inventory → Refund → Communication trace against real order `ORD-91987`
 - **E2.3** ✅ `E2.3-three-scenarios.txt` — `agent_orchestrator.py test`, all 3 canonical scenarios
@@ -252,7 +252,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
   expedited shipping, 3-year electronics warranty, $500/20-order tier thresholds) — parallel dispatch and
   synthesis both confirmed working against live KBs, not just the earlier empty-KB graceful-degradation path.
 
-### Evidence collected → `docs/evidence/05-kb/`
+### Evidence collected → `evidence/additional-info/05-kb/`
 - **E3.1** ✅ `E3.1-kb-list-status.txt` — all 3 KBs `ACTIVE`, correct embedding model + S3_VECTORS storage + index name (CLI capture in lieu of console screenshot)
 - **E3.2** ✅ `E3.2-sync-history.txt` — all 3 ingestion jobs `COMPLETE`, 2 docs indexed / 0 failed each
 - **E3.3** ✅ `E3.3-task5-score.txt` — `25/25`
@@ -299,7 +299,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 - Live-verified via `get-guardrail`: exact policy match to the rubric (SEXUAL/VIOLENCE/HATE=HIGH, INSULTS/MISCONDUCT=MEDIUM, PII BLOCK/ANONYMIZE split, 3 denied topics, PROFANITY word list, version `1` ≠ DRAFT)
 - Live-verified via `get-agent-runtime`: `networkMode=PUBLIC`, `serverProtocol=MCP`, all 6 env vars present including the real KB IDs from Task 5
 
-### Evidence collected → `docs/evidence/03-guardrail-runtime/`
+### Evidence collected → `evidence/additional-info/03-guardrail-runtime/`
 - **E4.1** ✅ `E4.1-deploy-output.txt` — full `deploy` output, all 6 steps (second, idempotent run — both guardrail and runtime correctly reused rather than recreated)
 - **E4.2** ✅ `E4.2-guardrail-detail.txt` — `aws bedrock get-guardrail` output: content filter strengths, PII entities, denied topics, profanity, version `1` (CLI capture in lieu of console screenshot)
 - **E4.3** ✅ `E4.3-runtime-detail.txt` — `aws bedrock-agentcore-control get-agent-runtime` output: `PUBLIC`/`MCP`, all env vars
@@ -340,7 +340,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 - Live-verified via `get-memory`: `status=ACTIVE`, strategy `session_summary` type `SUMMARIZATION` status `ACTIVE`, `eventExpiryDuration=7`
 - Took ~90s from `CREATING` to `ACTIVE` after `create_memory()` returned — real backend provisioning delay, not an error
 
-### Evidence collected → `docs/evidence/04-memory/`
+### Evidence collected → `evidence/additional-info/04-memory/`
 - **E5.1** ✅ `E5.1-task4-score-within-all.txt` — Task 4 section = `15/15` (from a full `test_agent.py all` run)
 - **E5.2** ✅ `E5.2-deploy-step4-memory.txt` — deploy pipeline "Step 4/6: Configuring Memory…" line + memory ARN (idempotent re-run, correctly reused)
 - **E5.3** ✅ `E5.3-memory-resource-detail.txt` — `aws bedrock-agentcore-control get-memory` full detail: `SUMMARIZATION` strategy + 7-day expiry (CLI capture in lieu of console screenshot)
@@ -372,7 +372,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 ### Milestone M6 — verification
 `python tests/test_agent.py task6` → **0/20 in this environment** (see status note above) — code itself is correct/complete per spec
 
-### Evidence collected → `docs/evidence/06-observability/`
+### Evidence collected → `evidence/additional-info/06-observability/`
 - **E6.1** `E6.1-task6-result.txt` — shows the exact `AttributeError` proving the API gap, not a code defect
 - **E6.2** `E6.2-deploy-step5-observability.txt` — deploy pipeline's graceful `[Note] Logging config skipped (SDK version mismatch)` message, exactly as the TODO instructed
 
@@ -400,7 +400,7 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
   externally-confirmed SDK/API gap, not an implementation defect — the X-Ray deliverable above was
   produced via a separate, legitimate workaround rather than by that missing API)
 
-### Evidence collected → `docs/evidence/07-e2e/`
+### Evidence collected → `evidence/additional-info/07-e2e/`
 - **E7.1** ✅ `E7.1-final-deploy.txt` — final `deploy` run, all 6 steps (idempotent)
 - **E7.2** ✅ `E7.2-three-scenarios-routing.txt` — `agent_orchestrator.py test`, all 3 scenarios
 - **E7.3** ✅ **D4 ACHIEVED** — `E7.3-xray-service-graph-CONNECTED.json`: the real X-Ray service graph
@@ -451,7 +451,14 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 | E7.5 | completed `agent_orchestrator.py` | file | D1 | ✅ |
 | E7.6 | final `.env` (redacted) | text | D3 | ✅ |
 
-> Suggested storage: `docs/evidence/` with subfolders `00-setup/ 02-agents/ 05-kb/ 03-guardrail-runtime/ 04-memory/ 06-observability/ 07-e2e/`. Name files `E<id>-<slug>.png|txt`.
+> **Reorganized 2026-09-13** (see [[L24]]/[[L25]]): `evidence/` lives at the **repo
+> root** (not under `docs/`) and is split into `required/` (the single rubric-mandated
+> X-Ray Service Map screenshot, D4 — nothing else) and `additional-info/` (everything
+> below — all of `00-setup/ 02-agents/ 05-kb/ 03-guardrail-runtime/ 04-memory/
+> 06-observability/ 07-e2e/` plus supplementary console screenshots). None of the
+> `additional-info/` content is required by the rubric; it's our own audit trail. See
+> `evidence/README.md` and `evidence/TASK6-OBSERVABILITY-BUG.md` (the reviewer-facing
+> explanation of the Task 6 gap, self-contained, no links back into `docs/`).
 
 ---
 
@@ -499,7 +506,7 @@ Rationale: KBs (M3) must exist before deploy (M4) so the runtime env vars carry 
       real AWS SDK/API gap confirmed in two independent SDKs (boto3 1.43.87 and AWS CLI v2 2.36.22 both
       lack `put/get_agent_runtime_logging_configuration` entirely), not an implementation defect — see
       `lessons_learned.md` L17
-- [x] D1 (code) and D2/D3 (KBs + `.env`) collected in `docs/evidence/`
+- [x] D1 (code) and D2/D3 (KBs + `.env`) collected in `evidence/`
 - [x] **D4 (X-Ray Service Map) — achieved via a documented workaround, not the literal course steps.**
       The literal path (`test` mode + AgentCore-native observability) is confirmed genuinely blocked
       (Task 6 SDK gap + local-vs-hosted execution mismatch — L17). `scripts/xray_trace_demo.py` (new
@@ -521,33 +528,36 @@ Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-class
 
 ## 16. Active AWS resources — teardown checklist
 
-⚠️ **As of 2026-09-12, real billable AWS resources exist on the personal account (`187021010483`).**
-Pay-per-request DynamoDB + S3 are cheap at this scale, but nothing here is free-tier-guaranteed —
-tear this down when the project is done or between long gaps in work. Tracked here per explicit request
-so nothing is left running by accident.
+✅ **Torn down again 2026-09-13** — see the new "Teardown executed" note below. **No AWS
+resources are currently live** on the personal account (`187021010483`). The table
+right below documents the 2nd deployment (suffix `5b82cc40`) for the historical
+record / next-resume reference; it is no longer live.
 
-### Currently created (Task 2 + Task 5 checkpoint)
+### Currently created (2nd redeploy, 2026-09-12 — see [[L23]]; supersedes the 3153d8d0 set torn down in [[L19]]) — ⚠️ torn down again 2026-09-13, see [[L26]]
 | Resource | Name / ARN | Created by |
 |---|---|---|
 | CloudFormation stack | `udacity-agentcore` (us-east-1) | `aws cloudformation deploy`, 2026-09-12 |
 | DynamoDB table | `udacity-agentcore-orders` | stack |
 | DynamoDB table | `udacity-agentcore-customers` | stack |
 | DynamoDB table | `udacity-agentcore-workflow-state` | stack |
-| S3 bucket | `udacity-agentcore-policy-docs-187021010483-3153d8d0` (versioning **enabled**; holds 6 seeded policy docs) | stack |
-| S3 bucket | `udacity-agentcore-vectors-187021010483-3153d8d0` (versioning **enabled**; unused — see note below) | stack |
+| S3 bucket | `udacity-agentcore-policy-docs-187021010483-5b82cc40` (versioning **enabled**; holds 6 seeded policy docs) | stack |
+| S3 bucket | `udacity-agentcore-vectors-187021010483-5b82cc40` (versioning **enabled**; unused — see note below) | stack |
 | IAM role | `udacity-agentcore-agentcore-role` | stack |
 | CloudWatch log group | `/aws/bedrock/agentcore/udacity-agentcore` | stack |
 | **S3 Vectors vector bucket** | `udacity-agentcore-vectors-187021010483` (`arn:aws:s3vectors:us-east-1:187021010483:bucket/...`) — a **different resource type** from the plain S3 bucket above, own service (`s3vectors`), not deleted by the CFN stack | `aws s3vectors create-vector-bucket`, 2026-09-12 |
 | S3 Vectors index ×3 | `returns-index`, `shipping-index`, `warranty-index` (inside the vector bucket above; 1024-dim, float32, cosine) | `aws s3vectors create-index`, 2026-09-12 |
-| Bedrock Knowledge Base | `novamart-returns-policy-kb` (`HAEAIOJU2M`) | `aws bedrock-agent create-knowledge-base`, 2026-09-12 |
-| Bedrock Knowledge Base | `novamart-shipping-policy-kb` (`HNTEB2KQRZ`) | same |
-| Bedrock Knowledge Base | `novamart-warranty-policy-kb` (`ATZZEIJG1P`) | same |
-| KB data source ×3 | `novamart-{returns,shipping,warranty}-s3-source` (one per KB above, pointing at the matching `policies/*/` prefix) | `aws bedrock-agent create-data-source`, 2026-09-12 |
-| Bedrock Guardrail | `udacity-agentcore-guardrail` (id `mnsou98agg5p`, version `1`) | `create_guardrail()` via `deploy`, 2026-09-12 |
-| AgentCore Runtime | `udacity_agentcore_runtime` (`arn:aws:bedrock-agentcore:us-east-1:187021010483:runtime/udacity_agentcore_runtime-fh9FZwA4FY`) | `deploy_to_agentcore_runtime()` via `deploy`, 2026-09-12 |
-| Runtime artifact | `s3://udacity-agentcore-policy-docs-187021010483-3153d8d0/agentcore-artifacts/udacity_agentcore_runtime/deployment.zip` (small placeholder zip; removed when the policy-docs bucket is emptied in teardown step 1) | same |
-| **AgentCore Gateway** | `novamart-support-3153d8d0` (id `novamart-support-3153d8d0-aypt2f6im2`) — pre-written Step 6/6 of `deploy_all()`, not part of the graded rubric, but a **real resource** | `deploy_agentcore_gateway()` via `deploy`, 2026-09-12 (its 3 Lambda targets failed to register — no Lambda functions deployed — so the gateway itself exists but has no working targets) |
-| AgentCore Memory | `udacity_agentcore_memory-yX3G4HDqFe` (`SUMMARIZATION` strategy `session_summary`, 7-day expiry) | `configure_memory()` via `deploy`, 2026-09-12 |
+| Bedrock Knowledge Base | `novamart-returns-policy-kb` (`OAE89TXEFZ`) | `aws bedrock-agent create-knowledge-base`, 2026-09-12 |
+| Bedrock Knowledge Base | `novamart-shipping-policy-kb` (`0MEGQJLELU`) | same |
+| Bedrock Knowledge Base | `novamart-warranty-policy-kb` (`WHKLPELCYG`) | same |
+| KB data source ×3 | `{returns,shipping,warranty}-policy-datasource` (one per KB above; `inclusionPrefixes: ["policies/{domain}/"]` — see [[L23]] for a redeploy typo that first set this wrong) | `aws bedrock-agent create-data-source`, 2026-09-12 |
+| Bedrock Guardrail | `udacity-agentcore-guardrail` (id `n1u5uegfzyh5`, version `1`) | `create_guardrail()` via `deploy`, 2026-09-12 |
+| AgentCore Runtime | `udacity_agentcore_runtime` (`arn:aws:bedrock-agentcore:us-east-1:187021010483:runtime/udacity_agentcore_runtime-7GHgowA66J`) | `deploy_to_agentcore_runtime()` via `deploy`, 2026-09-12 |
+| Runtime artifact | `s3://udacity-agentcore-policy-docs-187021010483-5b82cc40/agentcore-artifacts/udacity_agentcore_runtime/deployment.zip` (small placeholder zip; removed when the policy-docs bucket is emptied in teardown step 1) | same |
+| **AgentCore Gateway** | `novamart-support-5b82cc40` (id `novamart-support-5b82cc40-7ejryouwpy`) — pre-written Step 6/6 of `deploy_all()`, not part of the graded rubric, but a **real resource** | `deploy_agentcore_gateway()` via `deploy`, 2026-09-12 (its 3 Lambda targets failed to register — no Lambda functions deployed — so the gateway itself exists but has no working targets) |
+| AgentCore Memory | `udacity_agentcore_memory-f9ULX16rCn` (`SUMMARIZATION` strategy `session_summary`, 7-day expiry) | `configure_memory()` via `deploy`, 2026-09-12 — see [[L23]] for a `clientToken` idempotency bug fixed this redeploy |
+| **CloudWatch Logs Delivery (real observability, [[L22]]/[[L23]])** | Sources `udacity_agentcore_runtime-7GHgowA66J-{application_logs,traces}-source`; destinations `...-cwl-dest` (→ `/aws/bedrock/agentcore/udacity-agentcore`) and `...-xray-dest` (→ X-Ray) | `configure_observability()` via `deploy`, 2026-09-12 — APPLICATION_LOGS fully wired; TRACES delivery requires the account-level X-Ray trace-segment-destination switch below to reach `ACTIVE` first |
+| **X-Ray trace segment destination** | Switched account-wide from `XRay` to `CloudWatchLogs` (`aws xray update-trace-segment-destination`) — required by the Delivery API's TRACES path; this **is** the "Transaction Search" toggle from the resume checklist, done via API instead of console | `aws xray update-trace-segment-destination`, 2026-09-12 (`Status` was `PENDING`, not yet `ACTIVE`, as of this entry) |
+| CloudWatch Logs resource policy | `TransactionSearchAccess` (account-level; grants `xray.amazonaws.com` → `logs:PutLogEvents` on `aws/spans` + `/aws/application-signals/data`) | `aws logs put-resource-policy`, 2026-09-12 — required for the X-Ray destination switch above to succeed |
 
 > Note: the CFN template's `VectorStoreBucket` (plain S3) is **not** used by these KBs — S3 Vectors
 > "vector buckets" are a separate resource type/ARN namespace from regular S3 buckets, so a real
@@ -563,8 +573,8 @@ CloudFormation **will not delete non-empty S3 buckets**, and both buckets have v
 
 ```sh
 # 1. Empty both versioned S3 buckets completely (current + all noncurrent versions + delete markers)
-for BUCKET in udacity-agentcore-policy-docs-187021010483-3153d8d0 \
-              udacity-agentcore-vectors-187021010483-3153d8d0; do
+for BUCKET in udacity-agentcore-policy-docs-187021010483-5b82cc40 \
+              udacity-agentcore-vectors-187021010483-5b82cc40; do
   aws s3api delete-objects --bucket "$BUCKET" --delete "$(
     aws s3api list-object-versions --bucket "$BUCKET" \
       --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json)" 2>/dev/null
@@ -574,7 +584,7 @@ for BUCKET in udacity-agentcore-policy-docs-187021010483-3153d8d0 \
 done
 
 # 2. Delete the 3 Bedrock Knowledge Bases (also deletes their data sources) — NOT part of the CFN stack
-for KB in HAEAIOJU2M HNTEB2KQRZ ATZZEIJG1P; do
+for KB in OAE89TXEFZ 0MEGQJLELU WHKLPELCYG; do
   aws bedrock-agent delete-knowledge-base --knowledge-base-id "$KB" --region us-east-1
 done
 
@@ -586,12 +596,24 @@ for IDX in returns-index shipping-index warranty-index; do
 done
 aws s3vectors delete-vector-bucket --vector-bucket-name "$VB" --region us-east-1
 
-# 4. Delete the AgentCore Gateway, Runtime, Memory resource (if Task 4 lands), and Guardrail —
+# 4. Delete the AgentCore Gateway, Runtime, Memory resource, and Guardrail —
 #    NONE of these are part of the CFN stack and won't be removed by it.
-aws bedrock-agentcore-control delete-gateway --gateway-identifier novamart-support-3153d8d0-aypt2f6im2 --region us-east-1
-aws bedrock-agentcore-control delete-agent-runtime --agent-runtime-id udacity_agentcore_runtime-fh9FZwA4FY --region us-east-1
-aws bedrock-agentcore-control delete-memory --memory-id udacity_agentcore_memory-yX3G4HDqFe --region us-east-1
-aws bedrock delete-guardrail --guardrail-identifier mnsou98agg5p --region us-east-1
+aws bedrock-agentcore-control delete-gateway --gateway-identifier novamart-support-5b82cc40-7ejryouwpy --region us-east-1
+aws bedrock-agentcore-control delete-agent-runtime --agent-runtime-id udacity_agentcore_runtime-7GHgowA66J --region us-east-1
+aws bedrock-agentcore-control delete-memory --memory-id udacity_agentcore_memory-f9ULX16rCn --region us-east-1
+aws bedrock delete-guardrail --guardrail-identifier n1u5uegfzyh5 --region us-east-1
+
+# 4b. Delete the CloudWatch Logs Delivery resources created for the real observability path ([[L22]]/[[L23]])
+for D in application_logs traces; do
+  aws logs delete-delivery --id "$(aws logs describe-deliveries --region us-east-1 \
+    --query "deliveries[?deliverySourceName=='udacity_agentcore_runtime-7GHgowA66J-${D}-source'].id | [0]" --output text)" --region us-east-1
+done
+aws logs delete-delivery-source --name udacity_agentcore_runtime-7GHgowA66J-application_logs-source --region us-east-1
+aws logs delete-delivery-source --name udacity_agentcore_runtime-7GHgowA66J-traces-source --region us-east-1
+aws logs delete-delivery-destination --name udacity_agentcore_runtime-7GHgowA66J-cwl-dest --region us-east-1
+aws logs delete-delivery-destination --name udacity_agentcore_runtime-7GHgowA66J-xray-dest --region us-east-1
+# (leave the account-level TransactionSearchAccess resource policy and the X-Ray CloudWatchLogs trace
+#  destination switch in place — they're account-wide, free, and reusable on the next redeploy)
 
 # 5. Delete the CloudFormation stack (removes DynamoDB tables, both plain S3 buckets, IAM role, log group)
 aws cloudformation delete-stack --stack-name udacity-agentcore --region us-east-1
@@ -632,28 +654,63 @@ resources, kept only as a historical record of what was built — see note above
 (Task 5) and X-Ray Service Map screenshot (M7/D4) both require manual AWS Console steps that the user
 will perform and screenshot themselves next session — see [[L14]] and [[L18]].
 
+### ✅ Teardown executed again — 2026-09-13 (submission prep pause; see [[L26]])
+
+The 2nd deployment (suffix `5b82cc40`, table above) was fully torn down using the same
+procedure, plus a new step for the CloudWatch Logs Delivery resources added in [[L23]]:
+- Both S3 buckets emptied and removed with the CFN stack.
+- 3 Knowledge Bases (`OAE89TXEFZ`/`0MEGQJLELU`/`WHKLPELCYG`) — deleted.
+- S3 Vectors indexes + vector bucket — deleted.
+- Gateway, Runtime, Guardrail — confirmed gone (`ResourceNotFoundException` on each).
+- Memory — `DELETING` at verification time (async, same as last time).
+- CloudWatch Logs Delivery resources (2 deliveries, 2 sources, 2 destinations) — explicitly
+  deleted first (not part of the original procedure, added this round).
+- CloudFormation stack — deleted, `describe-stacks` confirms "does not exist".
+- DynamoDB tables — gone (`list-tables` → `[]`).
+
+**Deliberately left in place** (account-level, free, no reason to undo): the
+`TransactionSearchAccess` CloudWatch Logs resource policy and the X-Ray trace segment
+destination switch (`CloudWatchLogs`, `ACTIVE`) from [[L23]] — reusable on the next
+redeploy without repeating that setup.
+
+**Reason for this pause:** preparing the submission (README rewrite, evidence
+reorganization into `evidence/`, the Task 6 bug note) — no AWS activity needed for
+that work, so resources were torn down again to avoid idle billing risk.
+
 ### Resume checklist — cover Task 6 / D4 gaps as fully as possible (added 2026-09-12, see [[L20]])
 
 After redeploying, do these **in order**, before calling the project done again:
 
-1. **Redeploy everything** via the normal flow above; confirm `.env` has the fresh KB IDs / runtime ARN /
+1. ✅ **Redeploy everything** via the normal flow above; confirm `.env` has the fresh KB IDs / runtime ARN /
    guardrail ID (the old ones are stale and must not be reused in evidence or screenshots).
-2. **Re-run `scripts/xray_trace_demo.py`** against the fresh resources to regenerate the D4 evidence
-   (`docs/evidence/07-e2e/E7.3-xray-service-graph-CONNECTED.json`) — the old one references now-deleted
+   **Done 2026-09-12, see [[L23]]** — fresh IDs are in the "Currently created" table above and in `.env`.
+2. ✅ **Re-run `scripts/xray_trace_demo.py`** against the fresh resources to regenerate the D4 evidence
+   (`evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`) — the old one references now-deleted
    resource IDs and would look inconsistent next to the new `.env` if submitted as-is.
+   **Done 2026-09-12, see [[L23]]** — regenerated against a real seeded order (`ORD-39460`), verified via
+   `batch-get-traces` (correctly nested `remote` subsegments) and `get-service-graph` (5 connected nodes:
+   OrchestratorAgent → InventoryAgent/RefundAgent/CommunicationAgent).
 3. **Follow the course's literal screenshot sequence:** run `python src/agent_orchestrator.py test`
    (the 3-scenario local test), then immediately re-run the X-Ray demo script if needed, then go to
    **AWS Console → X-Ray → Service map** and take the **required D4 screenshot manually** (user does
-   this — no browser automation, per explicit instruction this session).
+   this — no browser automation, per explicit instruction this session). **Still pending — this is the
+   step that needs you in the console now that the redeploy is done.**
 4. **Enable two real, free console-only settings** — genuine infrastructure, doesn't change
    `test_agent.py`'s score, but is honest completion of Task 6's intent and gives extra supporting
    evidence if a human reviewer looks at the console directly:
    - CloudWatch console → Settings → Account → **X-Ray traces** tab → enable **Transaction Search**
-     (one-time, account-level)
-   - AgentCore console → **Agent Runtime** → select the new runtime → **Tracing** pane → Edit → **Enable**
-     → Save
+     (one-time, account-level) — ✅ **done via API 2026-09-12, confirmed `ACTIVE`**
+     (`xray:UpdateTraceSegmentDestination` + the `TransactionSearchAccess` CloudWatch Logs resource
+     policy, see [[L23]]); open the console tab anyway to **screenshot the enabled state** as evidence.
+   - AgentCore console → **Agent Runtime** → select the new runtime
+     (`udacity_agentcore_runtime-7GHgowA66J`) → **Tracing** pane → Edit → **Enable** → Save — **still
+     pending, console-only, no API exists for this one** (confirmed in [[L18]]/[[L19]]).
    - Take a screenshot of the enabled Tracing toggle as supplementary Task 6 evidence.
-5. **Implement the *real* observability API in `configure_observability()` before redeploying again** —
+5. ✅ **Implement the *real* observability API in `configure_observability()` before redeploying again** —
+   **Done and fully verified 2026-09-12, see [[L23]]** — both halves confirmed live via
+   `describe-deliveries`: APPLICATION_LOGS (source → CWL destination) and TRACES (source → X-Ray
+   destination). Full test suite reconfirmed unchanged at 100/120. Original context below, kept for the
+   record:
    ✅ **doubly confirmed real** (2026-09-12, see [[L21]] + [[L22]]): the generic CloudWatch Logs "Delivery"
    API (`logs.put_delivery_source` / `put_delivery_destination` / `create_delivery`). Ground-truth proof is
    `logs.DescribeConfigurationTemplates` for `service=bedrock-agentcore` — a **live API response**, not

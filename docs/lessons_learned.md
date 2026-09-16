@@ -619,7 +619,7 @@ Two dead ends before the fix landed, both instructive:
 
 **Result, verified in the X-Ray console/API:** `OrchestratorAgent` (root) connected to 3 real edges -
 `InventoryAgent`, `RefundAgent`, `CommunicationAgent` - each with real durations from an actual live run
-against a real seeded order. Saved as `docs/evidence/07-e2e/E7.3-xray-service-graph-CONNECTED.json`
+against a real seeded order. Saved as `evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json`
 (kept `E7.3-xray-attempt-empty.txt` alongside it as the honest record of the failed native-path attempt).
 
 **Takeaway for anything X-Ray/tracing-related with the Strands Agents SDK going forward:** never rely on
@@ -859,3 +859,264 @@ Two follow-up Q queries were considered but judged unnecessary before proceeding
 ARN a Runtime writes to natively (moot now — the Delivery API lets us name our own destination rather than
 guessing AgentCore's default), and whether this gap is on a public AWS roadmap (nice-to-have context, not
 required — the evidence already on hand is definitive without it).
+
+---
+
+## L23 — 2026-09-12: 2nd redeploy — two new bugs found/fixed, real observability implemented and partially verified live
+
+User asked to redeploy everything after the [[L19]] teardown, with the explicit reminder that they (not
+this session) will take the required AWS Console screenshots. Full resume-checklist run (see
+`PROJECT_PLAN.md` §16), in order, plus two bugs surfaced along the way that aren't part of the documented
+API gap - genuine implementation mistakes, now fixed.
+
+**Harness checkpoint noise, ruled out as a concern first.** Before touching AWS, found the branch had
+changed to `dev/2nd-try` with an unfamiliar merge commit on `main`. Diffed the merge commit's tree against
+the prior `dev/task-01` tip - byte-identical, zero net new/lost content. Confirmed this is the same
+autosave/checkpoint behavior documented in [[L13]], not a second agent or lost work. Worth re-checking this
+way (diff the tree, don't just eyeball the commit message) any time branch/commit state looks unexpected.
+
+**1. Redeploy, fresh IDs (new suffix `5b82cc40`, replacing the torn-down `3153d8d0` set):** CFN stack →
+`seed_data.py` → S3 Vectors bucket/indexes → 3 KBs → guardrail/runtime/memory via `deploy`. All values
+recorded in `PROJECT_PLAN.md`'s "Currently created" table and written into `.env`.
+
+**2. Bug found: KB ingestion silently indexed 0 documents.** Data sources were created with
+`inclusionPrefixes: ["<domain>/"]` - a typo against [[L14]]'s own documented (and correct)
+`"policies/<domain>/"` prefix. `get-ingestion-job` reported `status: COMPLETE` with
+`numberOfDocumentsScanned: 0` for all three KBs - a **false-positive success signal** worth remembering:
+ingestion "completing" doesn't mean it found anything: always check the document-count stats, not just the
+status field. Fixed via `update-data-source` + re-running `start-ingestion-job`; all 3 KBs then showed
+`numberOfDocumentsScanned: 2, numberOfDocumentsFailed: 0` as expected.
+
+**3. Bug found: `configure_memory()` failed with `ResourceNotFoundException` on a clean redeploy.**
+`create_memory(..., clientToken=memory_name)` used a **deterministic** client token (just the memory's
+name, unchanged run-to-run). AWS's idempotency-token cache treated the new call as a retry of the
+*original* (now-deleted) `create_memory` request from the first deployment, and tried to replay that old
+result instead of creating a new resource - which no longer existed, hence the error. The function's own
+preceding `list_memories()` name-prefix check already prevents duplicate creation on a true re-run, so the
+token doesn't need to be deterministic for idempotency purposes. Fixed by making it unique per call
+(`f"{memory_name}-{uuid.uuid4().hex[:8]}"`). **General lesson: never pass a fixed/derived string as an AWS
+`clientToken` unless you actually want AWS to replay a past result under that exact token forever -
+generate a fresh one per real invocation instead**, and let your own existence-check (not the token) be
+what prevents duplicates.
+
+**4. Implemented and live-tested the real observability path from [[L21]]/[[L22]].** Rewrote
+`configure_observability()`: tries the rubric's named (nonexistent) method first, falls back to the
+CloudWatch Logs Delivery API. Debugging this against the real account surfaced three more specifics not
+visible from documentation alone, each fixed in the implementation:
+- **Delivery-destination ARN separator is `:`, not `/`.** `describe-delivery-destinations` on the actually-
+  created resource showed `arn:aws:logs:<region>:<acct>:delivery-destination:<name>` - a colon before the
+  name, not a slash. (An earlier AWS-assistant answer that used `/` in its example was simply wrong; always
+  verify AWS-assistant-generated example ARNs against a live `describe-*` call rather than trusting them
+  literally.)
+- **XRAY destinations take no `destinationResourceArn` at all.** Passing an `arn:aws:xray:...` ARN for a
+  `deliveryDestinationType='XRAY'` destination fails with `"Delivery Destination Resource ARN is of
+  unsupported service"` - X-Ray isn't an addressable resource in this API. The fix is to omit
+  `deliveryDestinationConfiguration` entirely and pass only `name` + `deliveryDestinationType='XRAY'`.
+- **`CreateDelivery` for a TRACES source requires an account-level X-Ray setting first.** Failed with:
+  `"X-Ray Delivery Destination is supported with CloudWatch Logs as a Trace Segment Destination. Please
+  enable the CloudWatch Logs destination for your traces using the UpdateTraceSegmentDestination API"`.
+  This is - concretely, now confirmed by hitting it directly - **the exact same "Transaction Search"
+  toggle** the resume checklist already planned to enable manually in the console ([[L19]]/[[L20]]'s step
+  4). Enabled it via API instead: `xray.update_trace_segment_destination(Destination='CloudWatchLogs')`.
+  That call itself then failed once more with `AccessDeniedException: XRay does not have permission to
+  call PutLogEvents on the aws/spans Log Group` - X-Ray needs a CloudWatch Logs **resource policy**
+  granting `xray.amazonaws.com` write access to the reserved `aws/spans` log group. AWS's own
+  CloudFormation docs for `AWS::Logs::ResourcePolicy` + `AWS::XRay::TransactionSearchConfig` give the exact
+  policy shape - critically, it must grant `logs:PutLogEvents` on **two** log groups
+  (`aws/spans` **and** `/aws/application-signals/data`), not just the one implied by the error message.
+  Applied via `aws logs put-resource-policy --policy-name TransactionSearchAccess`. After that,
+  `update_trace_segment_destination` succeeded, returning `Status: PENDING` (not yet `ACTIVE` as of this
+  entry - it's an async account-level change; re-check via `aws xray get-trace-segment-destination` before
+  re-running `configure_observability()` to complete the TRACES half).
+
+**Net result of item 4:** the APPLICATION_LOGS delivery (source → CWL destination → delivery link) is fully
+wired and confirmed via `describe-delivery-sources`/`describe-delivery-destinations` - this part of Task
+6's *intent* is now genuinely, verifiably real, not just theorized. The TRACES half is coded identically and
+will complete on the next `configure_observability()` call once the account-level switch finishes
+activating. Neither half moves `test_agent.py task6`'s score (see [[L17]]/[[L19]] - that test calls the
+fictional method directly, independent of any of this).
+
+**5. Regenerated the D4 X-Ray Service Map evidence against the fresh runtime.** Re-ran
+`scripts/xray_trace_demo.py` - its hardcoded `ORD-91987` didn't exist in the newly (randomly) seeded data
+(same class of mismatch as [[L13]]'s `demo.py` note), so the first run correctly-but-uninterestingly
+produced an "order not found" trace. Found a real seeded order for the same customer/product
+(`ORD-39460`, CUST-002, Desk Lamp LED, delivered 2026-06-28, outside the 30-day Standard return window),
+edited the script's hardcoded scenario to use it, and re-ran: same realistic "return denied, window
+expired" outcome as [[L13]]'s original live-chain proof, now with a **real, fresh, connected trace**
+(`1-6aa622af-...`) verified via `batch-get-traces` (correctly nested `remote` subsegments) and
+`get-service-graph` (OrchestratorAgent connected to all 3 workers). Overwrote
+`evidence/additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json` with the fresh graph.
+
+**Process note - a self-caught mistake:** while regenerating that evidence file, an overly broad cleanup
+command (`rm E7.3-xray-attempt-empty.txt`) deleted a *different*, deliberately-kept historical-record file
+alongside it (see [[L18]] - the honest record of the failed native-tracing attempt). Caught via
+`git status` before anything was committed and restored with `git checkout --`. Lesson: when replacing one
+evidence file with a fresh version, touch only that file - don't assume neighboring files in the same
+listing are also stale just because they're old.
+
+**Full test suite reconfirmed unchanged at 100/120** both immediately after redeploy (before the
+`configure_observability()` rewrite) and again afterward - the two Task 6 failures are exactly the same
+`AttributeError` as every prior run, confirming the rewrite didn't regress anything and, as expected,
+still can't move that specific score.
+
+**Update, same session:** the X-Ray trace-segment-destination switch reached `ACTIVE` a few minutes later.
+Re-ran `configure_observability(config.AGENTCORE_RUNTIME_ARN)` and the TRACES half completed cleanly this
+time - `describe-deliveries` now shows both pipelines live end-to-end:
+`...-application_logs-source` → `...-cwl-dest` and `...-traces-source` → `...-xray-dest`. Full test suite
+re-confirmed unchanged at 100/120 afterward. **Real observability item is now fully closed out** - both
+CloudWatch log delivery and X-Ray trace delivery are genuinely, verifiably wired for this runtime via the
+real API, not just one half of it.
+
+**Still open for next session:** step 3 of the resume checklist (course's literal screenshot sequence) and
+the console-only Runtime Tracing-pane toggle are both still pending - the user will do these manually in
+their own AWS Console session (including a screenshot of the now-`ACTIVE` Transaction Search setting).
+
+---
+
+## L24 — 2026-09-13: Re-read the full project instructions (not just the rubric), found there's only one required screenshot, reorganized `evidence/`
+
+User took 6 screenshots after [[L23]] and asked whether each was correct. Reviewed each with the Read
+tool (not browser automation - these were static image files already saved to disk, no console access
+needed):
+
+1. X-Ray Trace Map - **correct**, exactly the required D4 evidence (`Client -> OrchestratorAgent ->
+   InventoryAgent/RefundAgent/CommunicationAgent`, all connected).
+2. X-Ray Traces list filtered by OrchestratorAgent - good bonus context, not required.
+3. Transaction Search "Spans" tab - showed "No spans to show"; not a mistake (Transaction Search only
+   indexes a small % of spans for search by default, unrelated to whether it's "active"), but proves
+   nothing either way, so **deleted** rather than kept as ambiguous evidence.
+4. AgentCore Runtime detail overview - shows the fresh runtime ID/ARN and `Ready` status, but not a
+   distinct "Tracing" toggle (that pane, if it still exists in the current console, wasn't captured).
+5. CloudWatch log group `/aws/bedrock/agentcore/udacity-agentcore` - genuinely useful bonus evidence: a
+   log stream named `log_stream_created_by_aws_to_validate_log_delivery_subscriptions` is AWS's own
+   confirmation that the [[L23]] CloudWatch Logs Delivery API wiring is real and validated, not just
+   configured.
+6. Bedrock Knowledge Bases list, all 3 `Available` - good bonus Task 5 context.
+
+User then asked to click through to the AgentCore Runtime's "Observability" dashboard link (from the
+Endpoints table) - reported it as **completely empty**. This is not a new problem, it's the same gap
+already documented in [[L17]]/[[L18]]: that dashboard shows telemetry from the deployed runtime container
+actually being invoked live, but this project's deployed runtime has a placeholder artifact and is never
+really invoked (the real traces all come from `xray_trace_demo.py` running the agents locally and
+submitting X-Ray segments directly via `PutTraceSegments`, bypassing the runtime entirely). An empty
+native dashboard is expected and is itself supporting evidence for the bug report, not a new bug.
+
+**Then a self-correction worth recording:** when asked "what's still needed for CloudWatch -> Settings ->
+X-Ray traces tab," realized that specific navigation path was never actually verified this session - it
+was carried over unchanged from an older ([[L18]]/[[L19]]-era) note and repeated without re-checking.
+Searched for it directly and found no confirmation such a page exists in that form; the real, documented
+path (`docs.aws.amazon.com/AmazonCloudWatch/.../Enable-TransactionSearch.html`) is
+**Application Signals -> Transaction Search**, which is exactly the page screenshot #3 above already
+showed. **Lesson: don't repeat a navigation claim from earlier in a long session without re-verifying it
+against current docs, especially once real screenshots exist that could have been checked against it
+directly instead.**
+
+**Bigger finding: re-read the full course instructions (`1.md`, `6.md`, `7.md`), not just the rubric
+(`8.md`), to get a definitive list of what's actually required.** All four agree exactly, and the answer
+is narrower than the working evidence-collection habit built up over the project implied:
+
+- `1.md`'s deliverables list has exactly 4 items: completed `agent_orchestrator.py`, 3 KBs created in the
+  console with synced data sources, a populated `.env`, and **one** X-Ray Service Map screenshot.
+- `7.md` states the literal requirement verbatim: *"Required deliverable: Take a screenshot of your X-Ray
+  Service Map after running a live request... capture the full trace graph showing the Orchestrator ->
+  Worker call chain."*
+- `8.md`'s rubric matches: the only screenshot-shaped submission requirement anywhere in the rubric is
+  the X-Ray Service Map bullet under "Demonstrate end-to-end distributed tracing via X-Ray Service Map."
+
+**Nothing in the course or rubric asks for Transaction Search, the Runtime Tracing-pane toggle, the
+CloudWatch log group, or a KB list screenshot.** All the `evidence/00-setup/` through `07-e2e/`
+snapshot files this project accumulated (test scores, deploy output, diffs, etc.) are *our own* internal
+audit trail per `PROJECT_PLAN.md`'s tracking habit, not something the rubric or course instructions ever
+requested as separate submission artifacts. Worth remembering for future projects: build an evidence
+trail for your own confidence, but periodically re-check it against the actual submission requirements
+before assuming more of it needs to reach the reviewer than actually does - don't let "we generated this
+while verifying" silently become "the reviewer needs this."
+
+One honest non-screenshot caveat found in the same re-read: `6.md`/`8.md` both say the 3 KBs must be
+"created in the AWS Console" - ours were created via CLI ([[L14]]). The graded check
+(`test_agent.py task5` passing, correct names/IDs/sync status) doesn't care how they were created, so not
+worth redoing, but it's a literal-instruction deviation worth being aware of, distinct from anything
+screenshot-related.
+
+**Reorganized `evidence/` accordingly**, so a reviewer can find the one required artifact without
+wading through internal notes:
+- `evidence/required/` - contains only `D4-xray-service-map.png` (screenshot #1 above, renamed) and
+  a `README.md` citing the exact rubric/instruction lines it satisfies.
+- `evidence/additional-info/` - everything else: all of `00-setup/` through `07-e2e/` (git-mv'd,
+  history preserved) plus screenshots #2/#4/#5/#6 (renamed descriptively, moved under
+  `additional-info/screenshots/`).
+- Added `evidence/README.md` explaining the split and flagging that most `additional-info/` `.txt`/
+  `.diff` snapshots were captured against the **first** deployment (suffix `3153d8d0`, torn down in
+  [[L19]]) and won't match the current live resource IDs (suffix `5b82cc40`, [[L23]]) - they still
+  accurately prove each task passed at the time, just not against today's live ARNs. Updated every
+  `evidence/00-setup/...` through `07-e2e/...` path reference in `PROJECT_PLAN.md` and this file to
+  the new `additional-info/` prefix.
+
+---
+
+## L25 — 2026-09-13: removed all code/evidence references to internal docs; caught a harness-driven directory move mid-task; added a reviewer-facing bug note
+
+Three follow-ups after [[L24]]'s reorganization:
+
+**1. Removed every reference to `docs/lessons_learned.md`/`docs/PROJECT_PLAN.md` from
+anything the reviewer could see.** User pointed out correctly that these two files are
+our own internal working notes and will never be part of what's submitted - so no code
+comment, docstring, or evidence README should cite them as if the reviewer could follow
+the link. Fixed in `agent_orchestrator.py` (`configure_observability()`'s docstring and
+log message), both copies of `xray_trace_demo.py` (live script + evidence snapshot),
+both evidence READMEs, and a stray comment in `.env`. Verified clean with a repo-wide
+grep afterward - only this file and `PROJECT_PLAN.md` still reference each other, which
+is fine since neither is reviewer-facing.
+
+**2. Caught an unrequested directory move mid-task.** While starting the above cleanup,
+found the evidence directory had been silently relocated from `docs/evidence/` to a
+redundant `evidence/evidence/` at the repo root, with a real git commit
+("Move evidence directory from docs to root level") that neither this session nor the
+user had explicitly requested in that form. Best guess: the harness's checkpoint/
+autosave behaviour (the same class of thing documented in [[L13]]) reacted to an `@`
+file-reference the user typed for a path that didn't exist yet and normalized/created
+it, rather than any deliberate action. Initially moved everything back under
+`docs/evidence/` to match all the existing cross-references - but the user then
+clarified they specifically want `evidence/` to live at the **repo root**, not nested
+under `docs/`. Redid the move correctly (single-level `evidence/`, no duplication) and
+bulk-updated every `docs/evidence/` reference across `PROJECT_PLAN.md`, this file, and
+both evidence READMEs to the new root-level path. **Lesson: when repo structure looks
+different from what you last left it in, verify via `git log`/`git status` before
+either "fixing" it back or building on top of it - the fix itself can be wrong if you
+guess the intended target instead of asking.**
+
+**3. Added `evidence/TASK6-OBSERVABILITY-BUG.md`** - a self-contained, reviewer-facing
+explanation of the Task 6 gap (why `test_agent.py task6` cannot pass for any
+submission, the three independent confirmations that the rubric's named method doesn't
+exist, and what was implemented instead), linked from the top of `evidence/README.md`.
+Unlike the earlier in-conversation bug-report drafts, this one lives in the repo as an
+actual file the reviewer will see, and deliberately has zero links back into `docs/`.
+Per explicit user instruction, did **not** mention the KB-creation-via-CLI-vs-console
+discrepancy noted in [[L14]]/[[L24]] in this reviewer-facing file - user judged it a
+non-issue (functionally identical resources either way) and asked to drop it rather
+than flag it as a caveat to the reviewer.
+
+---
+
+## L26 — 2026-09-13: Torn down again to pause for submission prep
+
+User asked to tear everything down again while continuing to work on submission
+materials (README, evidence reorg, bug note) rather than AWS infrastructure. Ran the
+same procedure as [[L19]], plus the new CloudWatch Logs Delivery cleanup step added in
+[[L23]] (deliveries, sources, destinations - none of that existed the first time this
+procedure was written, since the real-observability implementation came later).
+
+Verified every resource gone via live API calls afterward, same as [[L19]]: CFN stack,
+both S3 buckets, 3 KBs, S3 Vectors bucket + indexes, Gateway, Runtime, Guardrail, and
+DynamoDB tables all confirmed removed (`ResourceNotFoundException` / empty lists);
+Memory showed `DELETING` at verification time, same async pattern as before.
+
+Deliberately left the account-level X-Ray/Transaction Search setup from [[L23]] in
+place (the `TransactionSearchAccess` resource policy and the `CloudWatchLogs` trace
+segment destination) - free, account-wide, and saves repeating that setup on the next
+redeploy.
+
+No code or documentation content changed as a result of the teardown itself - this
+entry and the corresponding `PROJECT_PLAN.md` §16 update are purely to keep the
+"what's currently live" record accurate, since submission-prep work (this session's
+README/evidence changes) continues with no AWS resources deployed.
