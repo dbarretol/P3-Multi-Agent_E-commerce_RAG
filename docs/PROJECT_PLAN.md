@@ -528,12 +528,12 @@ Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-class
 
 ## 16. Active AWS resources — teardown checklist
 
-⚠️ **As of 2026-09-12, real billable AWS resources exist on the personal account (`187021010483`).**
-Pay-per-request DynamoDB + S3 are cheap at this scale, but nothing here is free-tier-guaranteed —
-tear this down when the project is done or between long gaps in work. Tracked here per explicit request
-so nothing is left running by accident.
+✅ **Torn down again 2026-09-13** — see the new "Teardown executed" note below. **No AWS
+resources are currently live** on the personal account (`187021010483`). The table
+right below documents the 2nd deployment (suffix `5b82cc40`) for the historical
+record / next-resume reference; it is no longer live.
 
-### Currently created (2nd redeploy, 2026-09-12 — see [[L23]]; supersedes the 3153d8d0 set torn down in [[L19]])
+### Currently created (2nd redeploy, 2026-09-12 — see [[L23]]; supersedes the 3153d8d0 set torn down in [[L19]]) — ⚠️ torn down again 2026-09-13, see [[L26]]
 | Resource | Name / ARN | Created by |
 |---|---|---|
 | CloudFormation stack | `udacity-agentcore` (us-east-1) | `aws cloudformation deploy`, 2026-09-12 |
@@ -653,6 +653,29 @@ then update `.env` with the new values (the ones currently in `.env` are stale p
 resources, kept only as a historical record of what was built — see note above). The KB creation steps
 (Task 5) and X-Ray Service Map screenshot (M7/D4) both require manual AWS Console steps that the user
 will perform and screenshot themselves next session — see [[L14]] and [[L18]].
+
+### ✅ Teardown executed again — 2026-09-13 (submission prep pause; see [[L26]])
+
+The 2nd deployment (suffix `5b82cc40`, table above) was fully torn down using the same
+procedure, plus a new step for the CloudWatch Logs Delivery resources added in [[L23]]:
+- Both S3 buckets emptied and removed with the CFN stack.
+- 3 Knowledge Bases (`OAE89TXEFZ`/`0MEGQJLELU`/`WHKLPELCYG`) — deleted.
+- S3 Vectors indexes + vector bucket — deleted.
+- Gateway, Runtime, Guardrail — confirmed gone (`ResourceNotFoundException` on each).
+- Memory — `DELETING` at verification time (async, same as last time).
+- CloudWatch Logs Delivery resources (2 deliveries, 2 sources, 2 destinations) — explicitly
+  deleted first (not part of the original procedure, added this round).
+- CloudFormation stack — deleted, `describe-stacks` confirms "does not exist".
+- DynamoDB tables — gone (`list-tables` → `[]`).
+
+**Deliberately left in place** (account-level, free, no reason to undo): the
+`TransactionSearchAccess` CloudWatch Logs resource policy and the X-Ray trace segment
+destination switch (`CloudWatchLogs`, `ACTIVE`) from [[L23]] — reusable on the next
+redeploy without repeating that setup.
+
+**Reason for this pause:** preparing the submission (README rewrite, evidence
+reorganization into `evidence/`, the Task 6 bug note) — no AWS activity needed for
+that work, so resources were torn down again to avoid idle billing risk.
 
 ### Resume checklist — cover Task 6 / D4 gaps as fully as possible (added 2026-09-12, see [[L20]])
 

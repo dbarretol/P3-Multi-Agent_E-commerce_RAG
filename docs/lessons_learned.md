@@ -1095,3 +1095,28 @@ Per explicit user instruction, did **not** mention the KB-creation-via-CLI-vs-co
 discrepancy noted in [[L14]]/[[L24]] in this reviewer-facing file - user judged it a
 non-issue (functionally identical resources either way) and asked to drop it rather
 than flag it as a caveat to the reviewer.
+
+---
+
+## L26 — 2026-09-13: Torn down again to pause for submission prep
+
+User asked to tear everything down again while continuing to work on submission
+materials (README, evidence reorg, bug note) rather than AWS infrastructure. Ran the
+same procedure as [[L19]], plus the new CloudWatch Logs Delivery cleanup step added in
+[[L23]] (deliveries, sources, destinations - none of that existed the first time this
+procedure was written, since the real-observability implementation came later).
+
+Verified every resource gone via live API calls afterward, same as [[L19]]: CFN stack,
+both S3 buckets, 3 KBs, S3 Vectors bucket + indexes, Gateway, Runtime, Guardrail, and
+DynamoDB tables all confirmed removed (`ResourceNotFoundException` / empty lists);
+Memory showed `DELETING` at verification time, same async pattern as before.
+
+Deliberately left the account-level X-Ray/Transaction Search setup from [[L23]] in
+place (the `TransactionSearchAccess` resource policy and the `CloudWatchLogs` trace
+segment destination) - free, account-wide, and saves repeating that setup on the next
+redeploy.
+
+No code or documentation content changed as a result of the teardown itself - this
+entry and the corresponding `PROJECT_PLAN.md` §16 update are purely to keep the
+"what's currently live" record accurate, since submission-prep work (this session's
+README/evidence changes) continues with no AWS resources deployed.
