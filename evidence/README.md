@@ -9,18 +9,16 @@ collection (built before Task 6's real fix was ported in) is kept at
 [`../evidence-old/`](../evidence-old/) for the historical record, not as part
 of this submission.
 
-> **Status:** regenerated against a fresh deployment now that Task 6 has a
-> real, working implementation (see `docs/PROJECT_PLAN.md` §18) instead of
-> the AWS-SDK-gap workaround the old evidence documented. Real, verified
-> **120/120 (100%)** — see `test-scores/all.txt`. Only the X-Ray screenshot
-> is still outstanding (manual, AWS Console — see `required/README.md`).
+> **Status: complete.** Regenerated against a fresh deployment now that
+> Task 6 has a real, working implementation (see `docs/PROJECT_PLAN.md` §18)
+> instead of the AWS-SDK-gap workaround the old evidence documented. Real,
+> verified **120/120 (100%)** — see `test-scores/all.txt` — and the X-Ray
+> Service Map screenshot is captured — see `required/README.md`.
 
 ## The one required deliverable
 
-[`required/`](required/) — **action needed:** the X-Ray Service Map
-screenshot still needs to be taken manually from the AWS Console. See
-[`required/README.md`](required/README.md) for exactly where to go — traces
-are live right now.
+[`required/`](required/) — the X-Ray Service Map screenshot the project
+instructions and rubric ask for. See [`required/README.md`](required/README.md).
 
 ## Test scores, by rubric section
 
