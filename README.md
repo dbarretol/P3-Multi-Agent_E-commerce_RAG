@@ -15,7 +15,7 @@ Bedrock Guardrails, and maintaining shared state across a full request.
 | Path | What's there |
 |---|---|
 | [`project/starter/`](project/starter/) | The actual implementation — `src/agent_orchestrator.py`, tests, infrastructure template. See its own `README.md` for architecture, setup, and a full task-by-task breakdown. |
-| [`evidence/`](evidence/) | The required rubric deliverable (X-Ray Service Map) plus supporting evidence collected while building and verifying this project. |
+| [`evidence/`](evidence/) | The two required screenshots (120/120 test score, X-Ray Service Map) plus per-task automated test output. The prior, broader evidence collection is kept at [`evidence-old/`](evidence-old/) for historical record. |
 
 ## Rubric section → where it lives
 
@@ -24,22 +24,22 @@ checked off in the same sequence it's graded in.
 
 | Rubric section | Implementation | Evidence |
 |---|---|---|
-| **Multi-Agent Graph** — worker agents, parallel RAG, Orchestrator routing | `agent_orchestrator.py`: `build_inventory_agent`, `build_refund_agent`, `build_policy_agent` (+ 3 retriever sub-agents), `build_orchestrator_agent` | [`evidence/additional-info/02-agents/`](evidence/additional-info/02-agents/) |
-| **AgentCore Runtime and Guardrails** — Guardrail + deployment | `agent_orchestrator.py`: `create_guardrail`, `deploy_to_agentcore_runtime` | [`evidence/additional-info/03-guardrail-runtime/`](evidence/additional-info/03-guardrail-runtime/) |
-| **Memory and Knowledge Bases** — session memory + 3 KBs | `agent_orchestrator.py`: `configure_memory`; 3 Bedrock KBs (returns/shipping/warranty) | [`evidence/additional-info/04-memory/`](evidence/additional-info/04-memory/), [`05-kb/`](evidence/additional-info/05-kb/) |
-| **Observability** — CloudWatch/X-Ray + Service Map screenshot | `agent_orchestrator.py`: `configure_observability` | [`evidence/required/`](evidence/required/) (the screenshot itself), [`evidence/additional-info/06-observability/`](evidence/additional-info/06-observability/), and [`evidence/TASK6-OBSERVABILITY-BUG.md`](evidence/TASK6-OBSERVABILITY-BUG.md) (known AWS SDK limitation, explained) |
-| **Industry Best Practices** — clean code, correct model selection | Throughout `agent_orchestrator.py` — docstrings, naming, `config.*_MODEL_ID` used consistently | [`evidence/additional-info/07-e2e/`](evidence/additional-info/07-e2e/) (final file version + final test run) |
+| **Multi-Agent Graph** — worker agents, parallel RAG, Orchestrator routing | `agent_orchestrator.py`: `build_inventory_agent`, `build_refund_agent`, `build_policy_agent` (+ 3 retriever sub-agents), `build_orchestrator_agent` | [`evidence/test-scores/task2.txt`](evidence/test-scores/task2.txt) |
+| **AgentCore Runtime and Guardrails** — Guardrail + deployment | `agent_orchestrator.py`: `create_guardrail`, `deploy_to_agentcore_runtime` | [`evidence/test-scores/task3.txt`](evidence/test-scores/task3.txt) |
+| **Memory and Knowledge Bases** — session memory + 3 KBs | `agent_orchestrator.py`: `configure_memory`; 3 Bedrock KBs (returns/shipping/warranty) | [`evidence/test-scores/task4.txt`](evidence/test-scores/task4.txt), [`task5.txt`](evidence/test-scores/task5.txt) |
+| **Observability** — CloudWatch/X-Ray + Service Map screenshot | `agent_orchestrator.py`: `configure_observability` (real CloudWatch/X-Ray integration, `src/agent_observability.py`) | [`evidence/test-scores/task6.txt`](evidence/test-scores/task6.txt), [`evidence/required/xray-service-map/`](evidence/required/xray-service-map/) |
+| **Industry Best Practices** — clean code, correct model selection | Throughout `agent_orchestrator.py` — docstrings, naming, `config.*_MODEL_ID` used consistently | source file itself |
 
 ## Status
 
-All tasks are implemented and verified live against a real AWS deployment — see
+**Complete — real, verified 120/120 (100%).** All tasks are implemented and
+verified live against a real AWS deployment — see
 [`project/starter/README.md`](project/starter/README.md) for the full task
-breakdown. One automated check in Task 6 calls a boto3 method that has never
-shipped in any released AWS SDK version; `configure_observability()` still
-implements the real, currently-shipping equivalent (CloudWatch Logs Delivery API
-for X-Ray and log delivery), verified live end to end. See
-[`evidence/TASK6-OBSERVABILITY-BUG.md`](evidence/TASK6-OBSERVABILITY-BUG.md) for
-the investigation behind that.
+breakdown. Task 6 (Observability) uses a genuine CloudWatch/X-Ray integration
+(`src/agent_observability.py`, ported from Udacity's own upstream starter-kit
+update) rather than a workaround — see
+[`evidence/test-scores/all.txt`](evidence/test-scores/all.txt) and
+[`evidence/required/`](evidence/required/) for the two required screenshots.
 
 ## Quick start
 
