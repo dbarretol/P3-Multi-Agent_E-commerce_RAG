@@ -1,6 +1,6 @@
 # A note to the reviewer, about the Task 6 (Observability) score
 
-Before getting to Task 6, I wanted to explain nan issue found while trying to compelte the observability part of the project.
+Before getting to Task 6, I wanted to explain an issue found while trying to complete the observability part of the project.
 
 ## What's happening
 
