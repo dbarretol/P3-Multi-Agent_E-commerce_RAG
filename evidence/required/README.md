@@ -1,4 +1,20 @@
-# Required deliverable — X-Ray Service Map
+# Required deliverables — screenshots
+
+Two of the project's four official deliverables are screenshots. Both are
+captured here, each as a small set of images since neither fit in one screen.
+
+## 1. `python tests/test_agent.py all` → 120/120
+
+> **✅ Done.** Captured 2026-09-16, PowerShell, against the live 3rd redeploy.
+> Split across 2 screenshots in [`test-score-120/`](test-score-120/) (top half
+> and bottom half of the same terminal run, not two different runs):
+>
+> | File | Shows |
+> |---|---|
+> | `01-tasks-2-to-5.png` | Task 2 (40/40), Task 3 (20/20), Task 4 (15/15), Task 5 (25/25) |
+> | `02-task6-and-final-score.png` | Task 6 (20/20) and `Score: 120/120 pts (100%)` — "Perfect score! All tasks complete." |
+
+## 2. X-Ray Service Map
 
 > **✅ Done.** Captured 2026-09-16 from CloudWatch → X-Ray traces → Service map
 > (region `us-east-1`, 6h window), against the live 3rd redeploy. The full

@@ -12,13 +12,16 @@ of this submission.
 > **Status: complete.** Regenerated against a fresh deployment now that
 > Task 6 has a real, working implementation (see `docs/PROJECT_PLAN.md` §18)
 > instead of the AWS-SDK-gap workaround the old evidence documented. Real,
-> verified **120/120 (100%)** — see `test-scores/all.txt` — and the X-Ray
-> Service Map screenshot is captured — see `required/README.md`.
+> verified **120/120 (100%)** — see `test-scores/all.txt` — and both required
+> screenshots are captured — see `required/README.md`.
 
-## The one required deliverable
+## The required deliverables
 
-[`required/`](required/) — the X-Ray Service Map screenshot the project
-instructions and rubric ask for. See [`required/README.md`](required/README.md).
+Per the project instructions, submission requires: (1) completed
+`agent_orchestrator.py`, (2) populated `.env`, (3) a screenshot of the
+120/120 test score, and (4) the X-Ray Service Map screenshot. (1) and (2)
+are the source/config already in this repo; (3) and (4) are in
+[`required/`](required/) — see [`required/README.md`](required/README.md).
 
 ## Test scores, by rubric section
 
