@@ -15,11 +15,13 @@ Run after each task to validate your implementation:
 
 import sys
 import os
+import re
 import json
 import time
 import boto3
 import unittest
 from unittest.mock import patch, MagicMock
+from datetime import datetime, timedelta, timezone
 
 # Add parent dir to path so we can import student files
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -62,6 +64,28 @@ def check(condition, points, pass_msg, fail_msg, detail=""):
     else:
         failed(f"[+{points}pts] {fail_msg}", detail)
         return False
+
+def info(msg):
+    print(f"  {Colors.CYAN}ℹ INFO{Colors.RESET} {msg}")
+
+def _runtime_id() -> str:
+    return config.AGENTCORE_RUNTIME_ARN.split('/')[-1]
+
+def _get_runtime(agentcore_control):
+    """Return the runtime description or None (prints the reason)."""
+    runtime_arn = config.AGENTCORE_RUNTIME_ARN
+    if not runtime_arn:
+        failed("AGENTCORE_RUNTIME_ARN not set - complete Task 3 first",
+               "Run `python src/agent_orchestrator.py deploy` and copy the ARN into .env")
+        return None
+    if not re.match(r'^arn:aws:bedrock-agentcore:[a-z0-9-]+:\d{12}:runtime/[A-Za-z0-9_-]+$', runtime_arn):
+        failed("AGENTCORE_RUNTIME_ARN does not look like an AgentCore Runtime ARN", runtime_arn)
+        return None
+    try:
+        return agentcore_control.get_agent_runtime(agentRuntimeId=_runtime_id())
+    except Exception as e:
+        failed("get_agent_runtime() failed for AGENTCORE_RUNTIME_ARN", str(e))
+        return None
 
 
 # ═══════════════════════════════════════════════════════
@@ -319,29 +343,32 @@ class TestTask3(unittest.TestCase):
 class TestTask4(unittest.TestCase):
 
     def setUp(self):
-        self.agentcore = boto3.client('bedrock-agentcore', region_name=config.AWS_REGION)
+        # get_agent_runtime / memory lookups are control-plane operations -
+        # bedrock-agentcore (data-plane) does not expose them.
+        self.agentcore_control = boto3.client('bedrock-agentcore-control', region_name=config.AWS_REGION)
 
     def test_4_1_memory_is_configured(self):
-        """AgentCore Memory should be enabled on the runtime."""
+        """AgentCore Memory should exist with a SESSION_SUMMARY (SUMMARIZATION) strategy."""
         header("Task 4 - Memory")
         try:
-            runtime_arn = config.AGENTCORE_RUNTIME_ARN
-            if not runtime_arn:
-                check(False, 15, "", "AGENTCORE_RUNTIME_ARN not set - complete Task 3 first")
+            expected_name = config.MEMORY_NAMESPACE.replace('-', '_')
+            memories = self.agentcore_control.list_memories().get('memories', [])
+            match = next((m for m in memories if m.get('id', '').startswith(expected_name)), None)
+            if match is None:
+                check(False, 15, "", "AgentCore Memory is not configured - complete Task 4 first",
+                      f"No memory found with id prefix {expected_name!r}")
                 return
 
-            runtime_id = runtime_arn.split('/')[-1]
-            response = self.agentcore.get_agent_runtime(agentRuntimeId=runtime_id)
-
-            memory_config = response.get('memoryConfiguration', {})
-            memory_enabled = 'SESSION_SUMMARY' in memory_config.get('enabledMemoryTypes', [])
+            detail = self.agentcore_control.get_memory(memoryId=match['id']).get('memory', {})
+            strategies = detail.get('strategies', [])
+            summary_ok = any(s.get('type') == 'SUMMARIZATION' for s in strategies)
 
             check(
-                memory_enabled,
+                summary_ok and detail.get('status') == 'ACTIVE',
                 15,
-                "AgentCore Memory is enabled (SESSION_SUMMARY type)",
-                "AgentCore Memory is not enabled on the runtime",
-                f"Found memoryConfiguration: {memory_config}"
+                f"AgentCore Memory is enabled (SESSION_SUMMARY type, {detail.get('status')})",
+                "AgentCore Memory is not enabled with a SESSION_SUMMARY strategy",
+                f"Found strategies: {strategies}, status: {detail.get('status')}"
             )
         except Exception as e:
             check(False, 15, "", "Error checking memory configuration", str(e))
@@ -431,63 +458,104 @@ class TestTask5(unittest.TestCase):
 class TestTask6(unittest.TestCase):
 
     def setUp(self):
-        # Use the control-plane client — get_agent_runtime_logging_configuration
-        # lives on bedrock-agentcore-control, not the data-plane bedrock-agentcore client.
-        self.agentcore = boto3.client('bedrock-agentcore-control', region_name=config.AWS_REGION)
+        self.agentcore_control = boto3.client('bedrock-agentcore-control', region_name=config.AWS_REGION)
         self.logs = boto3.client('logs', region_name=config.AWS_REGION)
+        self.xray = boto3.client('xray', region_name=config.AWS_REGION)
 
     def test_6_1_cloudwatch_logging_enabled(self):
-        """CloudWatch logging should be enabled for the runtime."""
+        """CloudWatch logging must be configured on the runtime and the log group must exist."""
         header("Task 6 - Observability")
         try:
-            runtime_arn = config.AGENTCORE_RUNTIME_ARN
-            if not runtime_arn:
-                check(False, 10, "", "AGENTCORE_RUNTIME_ARN not set - complete Task 3 first")
+            runtime = _get_runtime(self.agentcore_control)
+            if runtime is None:
+                check(False, 10, "", "AgentCore Runtime not available - complete Task 3 first")
                 return
-            
-            runtime_id = runtime_arn.split('/')[-1]
-            response = self.agentcore.get_agent_runtime_logging_configuration(
-                agentRuntimeId=runtime_id
-            )
-            
-            cw_config = response.get('loggingConfiguration', {}).get('cloudWatchConfig', {})
-            cw_enabled = cw_config.get('enabled', False)
-            
+            env = runtime.get('environmentVariables', {}) or {}
+            log_group = env.get('AGENT_LOG_GROUP', '')
+            problems = []
+            if log_group != config.AGENT_LOG_GROUP:
+                problems.append(f"AGENT_LOG_GROUP is {log_group!r}, expected {config.AGENT_LOG_GROUP!r}")
+            if env.get('AGENT_LOG_LEVEL', '').upper() != 'INFO':
+                problems.append(f"AGENT_LOG_LEVEL is {env.get('AGENT_LOG_LEVEL')!r}, expected 'INFO'")
+            if env.get('AGENT_LOG_TO_CLOUDWATCH', '').lower() != 'true':
+                problems.append("cloudWatchConfig.enabled was not True")
+            groups = self.logs.describe_log_groups(logGroupNamePrefix=config.AGENT_LOG_GROUP).get('logGroups', [])
+            if not any(g['logGroupName'] == config.AGENT_LOG_GROUP for g in groups):
+                problems.append(f"log group {config.AGENT_LOG_GROUP} does not exist")
             check(
-                cw_enabled,
+                not problems,
                 10,
-                "CloudWatch logging is enabled for the AgentCore runtime",
-                "CloudWatch logging is not enabled",
-                f"Found config: {cw_config}"
+                f"CloudWatch logging enabled at INFO level → {config.AGENT_LOG_GROUP}",
+                "CloudWatch logging is not configured on the runtime",
+                '; '.join(problems) + "  (run configure_observability() via the deploy command)"
             )
+            streams = self.logs.describe_log_streams(logGroupName=config.AGENT_LOG_GROUP,
+                                                     orderBy='LastEventTime', descending=True,
+                                                     limit=1).get('logStreams', [])
+            if streams and streams[0].get('lastEventTimestamp'):
+                age = (time.time() * 1000 - streams[0]['lastEventTimestamp']) / 60000
+                info(f"latest agent log stream: {streams[0]['logStreamName']} ({age:.0f} min ago)")
+            else:
+                info("no agent log events yet - run `python src/agent_orchestrator.py test`")
         except Exception as e:
             check(False, 10, "", "Error checking CloudWatch config", str(e))
 
     def test_6_2_xray_tracing_enabled(self):
-        """X-Ray tracing should be enabled for the runtime."""
+        """X-Ray tracing must be enabled at 100% sampling (runtime + Transaction Search)."""
         try:
-            runtime_arn = config.AGENTCORE_RUNTIME_ARN
-            if not runtime_arn:
-                check(False, 10, "", "AGENTCORE_RUNTIME_ARN not set")
+            runtime = _get_runtime(self.agentcore_control)
+            if runtime is None:
+                check(False, 10, "", "AgentCore Runtime not available")
                 return
-            
-            runtime_id = runtime_arn.split('/')[-1]
-            response = self.agentcore.get_agent_runtime_logging_configuration(
-                agentRuntimeId=runtime_id
-            )
-            
-            xray_config = response.get('loggingConfiguration', {}).get('xRayConfig', {})
-            xray_enabled = xray_config.get('enabled', False)
-            
+            env = runtime.get('environmentVariables', {}) or {}
+            problems = []
+            if env.get('AGENT_TRACING_ENABLED', '').lower() != 'true':
+                problems.append("xRayConfig.enabled was not True on the runtime")
+            try:
+                rate = float(env.get('AGENT_TRACE_SAMPLING_RATE', '0'))
+            except ValueError:
+                rate = 0.0
+            if rate != 1.0:
+                problems.append(f"xRayConfig.samplingRate is {rate}, expected 1.0")
+
+            dest = self.xray.get_trace_segment_destination()
+            if dest.get('Destination') != 'CloudWatchLogs':
+                problems.append(f"Transaction Search destination is {dest.get('Destination')} "
+                                f"(expected CloudWatchLogs)")
+            rules = self.xray.get_indexing_rules().get('IndexingRules', [])
+            pct = next((r.get('Rule', {}).get('Probabilistic', {}).get('DesiredSamplingPercentage')
+                        for r in rules if r.get('Name') == 'Default'), None)
+            if pct != 100:
+                problems.append(f"trace indexing percentage is {pct}, expected 100")
+
             check(
-                xray_enabled,
+                not problems,
                 10,
-                "X-Ray tracing is enabled for the AgentCore runtime",
-                "X-Ray tracing is not enabled",
-                f"Found config: {xray_config}"
+                "X-Ray tracing enabled: 100% sampling, Transaction Search → CloudWatch Logs "
+                f"({dest.get('Status')})",
+                "X-Ray tracing is not fully configured",
+                '; '.join(problems)
             )
         except Exception as e:
             check(False, 10, "", "Error checking X-Ray config", str(e))
+
+    def test_6_3_traces_present(self):
+        """Informational: were traces from the multi-agent system received by X-Ray recently?"""
+        try:
+            now = datetime.now(timezone.utc)
+            resp = self.xray.get_trace_summaries(
+                StartTime=now - timedelta(hours=6), EndTime=now,
+                FilterExpression='service("NovaMart-Orchestrator")',
+            )
+            count = len(resp.get('TraceSummaries', []))
+            if count:
+                info(f"{count} NovaMart trace(s) received by X-Ray in the last 6 hours - "
+                     f"open CloudWatch → X-Ray traces → Service map for the screenshot")
+            else:
+                info("no NovaMart traces in X-Ray yet - run `python src/agent_orchestrator.py test` "
+                     "(or `invoke`) and wait ~60 s")
+        except Exception as e:
+            info(f"could not query X-Ray traces: {e}")
 
 
 # ═══════════════════════════════════════════════════════

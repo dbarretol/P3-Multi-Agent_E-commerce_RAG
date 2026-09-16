@@ -1,57 +1,44 @@
 # Evidence directory
 
-This folder holds everything collected while building and verifying NovaMart's multi-agent system. It's organized to follow the rubric's own section order — `Multi-Agent Graph → AgentCore Runtime and Guardrails → Memory and Knowledge Bases → Observability → Industry Best Practices` — so you can work through it in the same sequence as the rubric itself.
+This folder holds exactly what the rubric asks for, in the rubric's own section
+order — `Multi-Agent Graph → AgentCore Runtime and Guardrails → Memory and
+Knowledge Bases → Observability → Industry Best Practices` — plus the automated
+test output that backs up each section's scored criteria. Nothing else: no
+setup screenshots, no non-graded extras. The previous, broader evidence
+collection (built before Task 6's real fix was ported in) is kept at
+[`../evidence-old/`](../evidence-old/) for the historical record, not as part
+of this submission.
 
-If anything about Task 6 (Observability) looks unusual, read [`TASK6-OBSERVABILITY-BUG.md`](TASK6-OBSERVABILITY-BUG.md) — it walks through what happened there and what was built instead.
+> **Status: complete.** Regenerated against a fresh deployment now that
+> Task 6 has a real, working implementation (see `docs/PROJECT_PLAN.md` §18)
+> instead of the AWS-SDK-gap workaround the old evidence documented. Real,
+> verified **120/120 (100%)** — see `test-scores/all.txt` — and both required
+> screenshots are captured — see `required/README.md`.
 
-## The one required deliverable
+## The required deliverables
 
-![X-Ray Service Map showing OrchestratorAgent connected to three worker agents](required/D4-xray-service-map.png)
+Per the project instructions, submission requires: (1) completed
+`agent_orchestrator.py`, (2) populated `.env`, (3) a screenshot of the
+120/120 test score, and (4) the X-Ray Service Map screenshot. (1) and (2)
+are the source/config already in this repo; (3) and (4) are in
+[`required/`](required/) — see [`required/README.md`](required/README.md).
 
-[`required/`](required/) contains the single screenshot the project instructions and rubric ask for — a connected X-Ray Service Map from a live run of the deployed system, `OrchestratorAgent` reaching `InventoryAgent`, `RefundAgent`, and `CommunicationAgent`. See [`required/README.md`](required/README.md) for exactly what it shows, how it was produced, and where the raw trace data lives. It belongs under the rubric's **Observability** section, below.
+## Test scores, by rubric section
 
-## Everything else, in rubric order
+[`test-scores/`](test-scores/) — the `python tests/test_agent.py <task>`
+output for each task, plus the final `all` run. Each file is the direct
+evidence for that section's "`python tests/test_agent.py taskN` passes"
+requirement.
 
-Nothing in [`additional-info/`](additional-info/) is required by the rubric — it's an honest record of how each task was built and verified, kept for context rather than as separate submission artifacts.
+| Rubric section | Test | File |
+|---|---|---|
+| Multi-Agent Graph | `task2` | `test-scores/task2.txt` |
+| AgentCore Runtime and Guardrails | `task3` | `test-scores/task3.txt` |
+| Memory and Knowledge Bases | `task4`, `task5` | `test-scores/task4.txt`, `test-scores/task5.txt` |
+| Observability | `task6` | `test-scores/task6.txt` |
+| — | `all` (final score) | `test-scores/all.txt` |
 
-**Before the rubric sections — environment setup:** [`additional-info/00-setup/`](additional-info/00-setup/) covers identity, the deployed CloudFormation stack, and seeded data — the groundwork every task after it depends on.
-
-### Multi-Agent Graph
-
-[`additional-info/02-agents/`](additional-info/02-agents/) — the worker-agent implementation (Inventory, Refund, Policy's parallel retrievers, Orchestrator), its test score, an implementation diff, and a real end-to-end refund-chain trace showing the routing rules in action.
-
-### AgentCore Runtime and Guardrails
-
-[`additional-info/03-guardrail-runtime/`](additional-info/03-guardrail-runtime/) — the Guardrail's policy configuration, the deployed Runtime's detail, and the Task 3 test score.
-
-![AgentCore Runtime detail, status Ready](additional-info/screenshots/agentcore-runtime-detail-overview.png)
-
-The deployed runtime (`udacity_agentcore_runtime-7GHgowA66J`), matching the ARN in `.env`.
-
-### Memory and Knowledge Bases
-
-[`additional-info/04-memory/`](additional-info/04-memory/) — AgentCore Memory configuration and its test score, and [`additional-info/05-kb/`](additional-info/05-kb/) — the three Knowledge Bases' sync history, a real parallel-retrieval query with grounded content from all three, and the Task 5 test score.
-
-![Bedrock Knowledge Bases, all Available](additional-info/screenshots/bedrock-knowledge-bases-list.png)
-
-All three KBs (returns, shipping, warranty), synced and `Available`.
-
-### Observability
-
-[`additional-info/06-observability/`](additional-info/06-observability/) — the Task 6 test result and deploy-time observability step output, discussed fully in [`TASK6-OBSERVABILITY-BUG.md`](TASK6-OBSERVABILITY-BUG.md).
-
-![X-Ray traces list for OrchestratorAgent](additional-info/screenshots/xray-traces-list-orchestratoragent.png)
-
-The two real traces behind the required Service Map, with their actual durations.
-
-![CloudWatch log group showing a delivery-validation stream](additional-info/screenshots/cloudwatch-log-group-delivery-validation-stream.png)
-
-AWS's own confirmation that the CloudWatch Logs Delivery pipeline built as the real alternative for Task 6 is genuinely live, not just configured.
-
-### Industry Best Practices
-
-Docstrings, naming, and model selection are properties of the code itself (`project/starter/src/agent_orchestrator.py`) rather than something to screenshot — see [`additional-info/07-e2e/`](additional-info/07-e2e/) for the final version of that file alongside the final full test run and a redacted `.env`, captured once every other section above was complete.
-
-## One thing worth knowing about the older snapshots
-
-Most of the `.txt`/`.diff` files above were captured against this project's *first* deployment. That deployment was torn down and redeployed once, midway through the project, to avoid leaving AWS resources running during a pause — so a handful of resource IDs/ARNs in the older snapshots won't match what's in `.env` today, even though they still accurately show each task passing at the time. The X-Ray evidence above and its underlying trace JSON in `additional-info/07-e2e/E7.3-xray-service-graph-CONNECTED.json` were both regenerated against the current deployment, so those do match `.env` as-is.
+Industry Best Practices isn't a separate test — it's a property of
+`project/starter/src/agent_orchestrator.py` itself (docstrings, naming,
+`config.*_MODEL_ID` used throughout), so there's nothing to capture beyond the
+source file already submitted.

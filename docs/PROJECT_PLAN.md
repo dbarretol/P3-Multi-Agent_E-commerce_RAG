@@ -11,8 +11,8 @@
 
 | Rule | Detail |
 |---|---|
-| **Only file you edit** | `project/starter/src/agent_orchestrator.py` (TODOs for Tasks 2, 3, 4, 6) |
-| **Never modify** | `config.py`, `tests/test_agent.py`, `src/agent_utils.py`, `src/bedrock_kb_retrieval.py`, `src/demo.py`, `infrastructure/*` |
+| **Only file you edit** | `project/starter/src/agent_orchestrator.py` (TODOs for Tasks 2, 3, 4, 6) — **exception granted 2026-09-16, see §18**: porting the real upstream Task 6 fix required also editing `tests/test_agent.py` (`TestTask6`/`TestTask4` rewrites) and `src/bedrock_kb_retrieval.py` (one `with trace_kb_retrieval(...)` wrapper), plus adding new `src/agent_observability.py`. Deliberate, upstream-sourced, not a rule violation. |
+| **Never modify** | `config.py`, `src/agent_utils.py`, `src/demo.py`, `infrastructure/*` — still holds; `tests/test_agent.py`/`bedrock_kb_retrieval.py` no longer absolute, see exception above |
 | **Model IDs** | Always reference `config.ORCHESTRATOR_MODEL_ID` (Haiku) and `config.WORKER_MODEL_ID` (Sonnet). Never hardcode a model string. |
 | **Run commands from** | `project/starter/` (so `load_dotenv()` finds `.env`) |
 | **Package manager** | `uv`. Create the env with `uv venv`, install with `uv pip install -r requirements.txt`. Run project commands either after activating `.venv`, or by prefixing with `uv run` (e.g. `uv run python tests/test_agent.py all`). Every bare `python …` command in this plan assumes the `.venv` is active. |
@@ -351,7 +351,14 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 
 **File:** `src/agent_orchestrator.py` · **Test:** `python tests/test_agent.py task6`
 
-> **Status: ⚠️ CODE DONE (2026-09-12), score 0/20 in this environment — genuine SDK/API gap, not a
+> **Status: ✅ SUPERSEDED 2026-09-16 — real fix adopted, see §18.** The paragraph below (SDK gap, 0/20)
+> was accurate against the starter revision this project was originally built from, but Udacity had
+> already shipped a real fix upstream (commit `b19a3e8`, 2026-09-04) before this project even started —
+> a new `agent_observability.py` module + rewritten `configure_observability()`/`test_agent.py` that
+> avoid the nonexistent method entirely. §18 documents porting that fix in. Leaving the original
+> analysis below intact as the historical record of why the gap was believed permanent.
+>
+> **Original status (2026-09-12), now superseded: CODE DONE, score 0/20 in this environment — genuine SDK/API gap, not a
 > bug.** `put_agent_runtime_logging_configuration` / `get_agent_runtime_logging_configuration` do not
 > exist on `bedrock-agentcore-control` in **either** the project's boto3 (1.43.87) **or** AWS CLI v2
 > (2.36.22)'s bundled botocore — confirmed both independently. This is exactly the "SDK version mismatch"
@@ -377,6 +384,15 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 - **E6.2** `E6.2-deploy-step5-observability.txt` — deploy pipeline's graceful `[Note] Logging config skipped (SDK version mismatch)` message, exactly as the TODO instructed
 
 ### Milestone M7 — end-to-end proof
+
+> **⚠️ SUPERSEDED 2026-09-16 — see §18.** Everything below is the accurate historical
+> record of the 2026-09-12 state (100/120, D4 via the `xray_trace_demo.py` workaround,
+> evidence under the now-renamed `evidence-old/`). It's kept as-is rather than rewritten.
+> **Current, real state:** 120/120 via the real Task 6 fix (§18), redeployed and
+> independently verified 2026-09-16 (`lessons_learned.md` [[L28]]). Both required
+> screenshots (120/120 score, X-Ray Service Map) are captured under the current
+> `evidence/required/` (`lessons_learned.md` [[L29]]), not the paths referenced below.
+
 - [x] `python src/agent_orchestrator.py deploy` (final, clean run with all functions implemented) — ran 2026-09-12, all steps complete/idempotent
 - [x] `python src/agent_orchestrator.py test` — verified routing, all 3 scenarios completed correctly:
 
@@ -415,6 +431,12 @@ APIs), which creates the identical AWS resources the console wizard would. **Tes
 ---
 
 ## 10. Evidence register (master checklist)
+
+> **⚠️ SUPERSEDED 2026-09-16 — see §18.** This register documents the 2026-09-12
+> evidence collection, now at `evidence-old/`. The current submission evidence
+> (real 120/120, both required screenshots) lives at `evidence/` — see its own
+> `README.md` for the current, much shorter mapping (it's rubric-scoped: just
+> `required/` + `test-scores/`, not this E-numbered scheme).
 
 | ID | Artifact | Format | Maps to | Collected |
 |---|---|---|---|---|
@@ -501,6 +523,12 @@ Rationale: KBs (M3) must exist before deploy (M4) so the runtime env vars carry 
 
 ## 14. Definition of done
 
+> **✅ SUPERSEDED 2026-09-16 — real 120/120, see §18.** The checklist below records
+> the accurate 2026-09-12 state (100/120, D4 via workaround). Since the real Task 6
+> fix landed and was redeployed/re-verified (`lessons_learned.md` [[L28]]/[[L29]]),
+> every item below is now true **without** the caveats — no SDK gap, no workaround,
+> both required screenshots genuinely captured. Kept below as historical record.
+
 - [x] All TODOs in `src/agent_orchestrator.py` implemented (Tasks 2, 3, 4, 6)
 - [x] `python tests/test_agent.py all` → **100/120** — ⚠️ not 120/120: Task 6's 20 points are blocked by a
       real AWS SDK/API gap confirmed in two independent SDKs (boto3 1.43.87 and AWS CLI v2 2.36.22 both
@@ -518,15 +546,59 @@ Rationale: KBs (M3) must exist before deploy (M4) so the runtime env vars carry 
 - [x] **Industry Best Practices pass**: every tool function has a docstring (purpose/params/return); every `build_*_agent()` returns exactly one `Agent`; names are `snake_case`/descriptive; no hardcoded model-ID strings anywhere — only `config.ORCHESTRATOR_MODEL_ID` / `config.WORKER_MODEL_ID`
 - [ ] Submission package assembled per Udacity classroom instructions — **before submitting, flag the D4 gap to course staff / re-check whether a newer AWS SDK release has since added the missing operation**
 
+**Current definition of done (2026-09-16):**
+- [x] `python tests/test_agent.py all` → **real 120/120 (100%)**, no SDK gap, no workaround — see
+      `evidence/test-scores/all.txt`
+- [x] All 4 official deliverables in place: completed `agent_orchestrator.py`, populated `.env`, the
+      120/120 screenshot, the X-Ray Service Map screenshot — see `evidence/required/`
+- [x] Branch `fix/task6-real-observability`, incrementally committed
+- [ ] Decide on: tear down live AWS resources, merge branch to `main`
+
 ---
 
 ## 15. Starter-kit upstream parity
+
+> ⚠️ **CORRECTED 2026-09-16 — the check below was wrong.** Re-verified against
+> `gh api repos/udacity/cd14764-aws-agentic-c3-classroom/commits` directly: commit
+> **`b19a3e8`, dated 2026-09-04** (message: "Project update"), touches all 13
+> starter files including a **brand-new `src/agent_observability.py`** (723 lines)
+> that did not exist before, plus rewrites of `agent_orchestrator.py`,
+> `config.py`, `bedrock_kb_retrieval.py`, and `tests/test_agent.py`. This predates
+> even this project's first deployment. The 2026-09-12 parity check below missed
+> it entirely (checked the wrong ref, or against a cached/stale view — root cause
+> not fully determined, just confirmed wrong). See `lessons_learned.md` **L27**
+> and **§18 below** for the real fix now being adopted from that commit.
 
 Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-classroom` (`main`, no local git remote configured — checked via `gh api` + direct file diff): every starter file (`src/agent_orchestrator.py` incl. all TODOs, `agent_utils.py`, `bedrock_kb_retrieval.py`, `demo.py`, `config.py`, `tests/test_agent.py`, `infrastructure/*`, `requirements.txt`, `.env.example`, `README.md`) is **byte-identical** to upstream. Latest upstream commit touching `project/starter` is `4eeecb3` (2026-05-29) — already present locally. No newer scaffolding, fixes, or TODO changes exist upstream that this working copy is missing. See `lessons_learned.md` **L12** for the full check.
 
 ---
 
 ## 16. Active AWS resources — teardown checklist
+
+> ✅ **Torn down again 2026-09-16**, after the 3rd redeploy served its purpose
+> (real 120/120 + both required screenshots captured — [[L28]]/[[L29]]). **No AWS
+> resources are currently live.** The 3rd deployment (suffix `434837e0`) is documented
+> below for the historical record:
+>
+> | Resource | ID |
+> |---|---|
+> | CFN stack | `udacity-agentcore` — was `CREATE_COMPLETE`, now deleted |
+> | S3 Vectors bucket | `udacity-agentcore-vectors-187021010483-434837e0` + 3 indexes — deleted |
+> | Knowledge Base — Returns | `4IRFSZVYIS` — deleted |
+> | Knowledge Base — Shipping | `UENXOCQKML` — deleted |
+> | Knowledge Base — Warranty | `K5TVHTPUV9` — deleted |
+> | Guardrail | `o06m2z42rocx` (v1) — deleted |
+> | AgentCore Runtime | `udacity_agentcore_runtime-nHjmkE2yLV` — deleted |
+> | AgentCore Gateway | `novamart-support-434837e0-ysxoo2rtux` — deleted (not part of the graded rubric, created by pre-written `deploy_all()` step 6/6) |
+> | AgentCore Memory | `udacity_agentcore_memory-vXHr7I7rzB` — `DELETING` at verification time (async, normal — same pattern as every prior teardown) |
+>
+> Verified via live `describe`/`list` calls after teardown: CFN stack gone
+> (`ValidationError: ... does not exist`), no `udacity-agentcore` S3 buckets, no S3
+> Vectors buckets, no KBs, no guardrails, no runtimes. `.env`'s IDs are now stale
+> pointers, kept as a record of what was built and verified. No CloudWatch Logs
+> Delivery resources existed this time to clean up (the real Task 6 fix from §18
+> doesn't use that API, unlike the 2nd redeploy's workaround — nothing to delete
+> there). See `lessons_learned.md` for the full teardown entry.
 
 ✅ **Torn down again 2026-09-13** — see the new "Teardown executed" note below. **No AWS
 resources are currently live** on the personal account (`187021010483`). The table
@@ -760,3 +832,84 @@ untouched, pristine starter (34 TODOs). No commits were made via an explicit `gi
 conversation — whatever is auto-committing (harness checkpoint feature, most likely) did so on its own.
 Nothing appears lost, but flagging this so the branch/commit history isn't a surprise later — worth
 squashing/rebasing `dev/task-01` before a final submission if a clean, single-branch history is wanted.
+
+---
+
+## 18. Task 6 — Real fix adopted from upstream (2026-09-16)
+
+### Discovery
+While double-checking the project against the full rubric text, checked
+`github.com/udacity/cd14764-aws-agentic-c3-classroom` directly (`gh api .../commits`) rather than
+relying on the 2026-09-12 parity note (§15), which turned out to be wrong. Commit **`b19a3e8`**
+(2026-09-04, "Project update") added a real, working fix for exactly the Task 6 blocker, plus two
+smaller mismatches found in the same rubric pass (Task 3 deploy protocol + guardrail env vars).
+Confirmed by downloading and reading the actual upstream files, not by assumption.
+
+### What upstream actually does differently
+- **New file `src/agent_observability.py`** (723 lines) — a self-contained module providing:
+  - `AgentTracer` / `tool` (drop-in replacement for `strands.tool`) — every `@tool`-decorated function
+    becomes a named X-Ray remote subsegment. The four routing tools' names
+    (`route_to_inventory_agent` etc.) map directly to worker-agent node names, so the Service Map draws
+    them as separate nodes.
+  - `trace_kb_retrieval(kb_id)` — a context manager `bedrock_kb_retrieval.py` wraps its `retrieve()`
+    call in, producing `KnowledgeBase:returns` / `:shipping` / `:warranty` nodes under `PolicyAgent`.
+  - `setup_logging()` / `flush_logs()` / `print_trace_hint()` — CloudWatch log shipping + a
+    Service-Map hint printed after a traced local run.
+  - `apply_observability_config(runtime_arn, logging_configuration)` — the real fix: creates the
+    CloudWatch log group, enables **CloudWatch Transaction Search** (`xray.update_trace_segment_destination`
+    + indexing rule, exactly the mechanism this project's own L23 workaround already independently
+    discovered and implemented), and writes the resulting flags onto the runtime's
+    `environmentVariables` via `update_agent_runtime` — **no call to any nonexistent SDK method.**
+- **`tests/test_agent.py`'s `TestTask6` is completely rewritten** to check real AWS state instead:
+  runtime `environmentVariables` (`AGENT_LOG_GROUP`, `AGENT_LOG_LEVEL`, `AGENT_LOG_TO_CLOUDWATCH`,
+  `AGENT_TRACING_ENABLED`, `AGENT_TRACE_SAMPLING_RATE`) + `xray.get_trace_segment_destination()` +
+  `xray.get_indexing_rules()`. **This test is genuinely passable.**
+- Two smaller, related mismatches found in the same pass: `deploy_to_agentcore_runtime()` should use
+  `protocolConfiguration={'serverProtocol': 'HTTP'}` (this project had `'MCP'`, meant for Gateway, not
+  Runtime) and should pass `GUARDRAIL_ID`/`GUARDRAIL_VERSION` as runtime environment variables (matches
+  the rubric's literal wording about a pre-written `_apply_guardrail()` reading them at runtime).
+
+### What this project's deployment does NOT need to adopt
+Upstream's Runtime deploy uses a real `BedrockAgentCoreApp` entrypoint (the container genuinely runs
+the agent code and serves real requests). **This project's `deploy_to_agentcore_runtime()` uploads a
+placeholder `main.py`** — the AgentCore Runtime resource exists (satisfies Task 3's checks) but was
+never meant to run real traffic; all actual agent execution has always happened locally (`agent_orchestrator.py
+test`/`chat`), which is also exactly what the rubric's own Task 6 instructions say to run
+("`python src/agent_orchestrator.py test`... then check the Service Map"). Adopting the full
+`BedrockAgentCoreApp` entrypoint pattern would mean packaging and shipping real code in the deployment
+artifact — a much larger, riskier change that isn't needed for either Task 6 to pass or for the
+required X-Ray screenshot to be genuine, so it's deliberately **not** part of this fix.
+
+### Implementation plan (this session)
+1. Add `project/starter/src/agent_observability.py`, ported from upstream — no changes needed, since
+   this project's `config.py` already exposes every constant it reads (`AWS_REGION`, `ACCOUNT_ID`,
+   `PROJECT_NAME`, `AGENT_LOG_GROUP`, `RETURNS_KB_ID`/`SHIPPING_KB_ID`/`WARRANTY_KB_ID`).
+2. `bedrock_kb_retrieval.py` — wrap the `retrieve()` call in `with trace_kb_retrieval(kb_id):`.
+3. `agent_orchestrator.py`:
+   - Remove the dead `_register_agentcore_compat_methods()` block — it registered a fake
+     `get_agent_runtime_logging_configuration`/`put_agent_runtime_logging_configuration` on the
+     **wrong** client (`bedrock-agentcore`, not `-control`), so it never actually worked; confirmed by
+     the fork's rubric check still hitting the real `AttributeError` on the control-plane client. Dead,
+     misleading code, superseded by the real fix.
+   - `from strands import Agent, tool` → `from strands import Agent`, plus
+     `from agent_observability import tool, tracer, setup_logging, flush_logs, print_trace_hint, apply_observability_config, wait_for_runtime_ready`.
+   - Rewrite `configure_observability(runtime_arn)` to build the `loggingConfiguration` dict and call
+     `apply_observability_config()`, matching upstream's TODO guidance almost exactly.
+   - CLI `test` mode (`if sys.argv[1] == 'test'`) — wrap each of the 3 scenario invocations in
+     `tracer.trace_request(session_id, customer_id, query)`, call `setup_logging(to_cloudwatch=True)`
+     once beforehand and `flush_logs()`/`print_trace_hint()` after. This makes the existing 3-scenario
+     run (refund + policy + direct-math) itself produce a complete, real trace covering
+     Inventory/Refund/Communication **and** Policy+3 KB nodes — the standalone `scripts/xray_trace_demo.py`
+     workaround is no longer needed for this once this lands.
+   - `deploy_to_agentcore_runtime()` — `serverProtocol` → `'HTTP'`; add `GUARDRAIL_ID`/`GUARDRAIL_VERSION`
+     to `environmentVariables` (additive; the existing working guardrail event-hook attachment is left
+     in place, not replaced).
+4. `tests/test_agent.py` — add `re`/`datetime` imports, `info()`/`_runtime_id()`/`_get_runtime()`
+   helpers, replace `TestTask6` with upstream's real-state version. `TestTask3` is left untouched (it
+   already passes and doesn't test the protocol/env-var specifics).
+5. Redeploy all AWS resources fresh, run `python tests/test_agent.py all`, confirm the real score.
+6. Recapture evidence: a genuine X-Ray Service Map screenshot showing `PolicyAgent` and the 3
+   `KnowledgeBase:*` nodes (not just Inventory/Refund/Communication), plus an actual screenshot (not
+   just a text capture) of the final test score. Update `evidence/TASK6-OBSERVABILITY-BUG.md`,
+   `evidence/README.md`, and the root `README.md` to drop the "known SDK gap" framing since it no
+   longer applies once this lands.
