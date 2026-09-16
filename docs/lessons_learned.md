@@ -638,9 +638,9 @@ Service Map visibility, not just correct trace nesting.
 | Region | us-east-1 |
 | Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`, currently on branch `fix/task6-real-observability` (see [[L27]] re: another unexpected auto-branch-switch, same class as [[L13]]/[[L23]]); no git remote configured (starter files verified against upstream via `gh api`/`curl`, see L12 — though see [[L27]] on that verification's staleness) |
 | `.env` | repo root, gitignored |
-| Stack | `udacity-agentcore` — ✅ deployed 2026-09-16 (3rd redeploy, suffix `434837e0`), `CREATE_COMPLETE`. **Real billable resources exist — see `PROJECT_PLAN.md` §16 for the full list + teardown steps.** |
-| Data | seeded 2026-09-16: 4 customers, 15 orders, 6 policy docs |
-| **Status** | ✅ **Complete — real, verified 120/120 (100%).** The [[L17]] Task 6 SDK-gap ceiling is resolved: a real fix shipped upstream ([[L27]]) was ported in, replacing the [[L21]]-[[L23]] CloudWatch-Logs-Delivery-API workaround. Redeployed and independently re-verified ([[L28]]) — all 5 tasks pass genuinely, no mocked/faked checks. Both required screenshots captured ([[L29]]): 120/120 test score and X-Ray Service Map (9-node graph, Orchestrator → 4 workers + 3 KBs). All 4 official deliverables in place. |
+| Stack | `udacity-agentcore` — ✅ torn down again 2026-09-16 ([[L30]]), after the 3rd redeploy (suffix `434837e0`) served its purpose. **No AWS resources currently live.** |
+| Data | last seeded 2026-09-16 (now deleted with the stack): 4 customers, 15 orders, 6 policy docs |
+| **Status** | ✅ **Complete and submitted-ready — real, verified 120/120 (100%).** The [[L17]] Task 6 SDK-gap ceiling is resolved: a real fix shipped upstream ([[L27]]) was ported in, replacing the [[L21]]-[[L23]] CloudWatch-Logs-Delivery-API workaround. Redeployed and independently re-verified ([[L28]]) — all 5 tasks pass genuinely, no mocked/faked checks. Both required screenshots captured ([[L29]]): 120/120 test score and X-Ray Service Map (9-node graph, Orchestrator → 4 workers + 3 KBs). All 4 official deliverables in place. Resources torn down and branch merged/pushed to `main` ([[L30]]). |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
@@ -1272,3 +1272,35 @@ the user, not this session, takes every AWS Console screenshot - this session's 
 to prepare the live AWS state and clearly flag the exact moment + exact console path
 when a screenshot is needed, not to assume a text/API capture is an adequate
 substitute for a rubric line that literally says "screenshot."
+
+---
+
+## L30 — 2026-09-16: Final teardown (3rd deployment) + branch merged and pushed
+
+With both required screenshots captured and the real 120/120 committed ([[L29]]),
+user asked to tear down the live resources, merge the feature branch, and push. Before
+deleting anything, pulled the exact live resource names/IDs from the CFN stack outputs
+and live `list`/`describe` calls (not from the plan doc's transcription, in case it had
+drifted) - confirmed the S3 Vectors vector bucket this redeploy happens to share the
+exact same name as the CFN-owned plain S3 `VectorStoreBucket`
+(`udacity-agentcore-vectors-187021010483-434837e0`, both suffixed this time, unlike the
+2nd redeploy where only the CFN one had a suffix) - still two separate resources in two
+separate service namespaces per [[L14]], both had to be deleted independently.
+
+Also confirmed **no CloudWatch Logs Delivery resources existed this time** ([[L22]]/
+[[L23]]'s `PutDeliverySource`/`PutDeliveryDestination` mechanism) - expected, since the
+real [[L27]] fix uses runtime `environmentVariables` + Transaction Search instead, not
+that API. One less cleanup step than the 2nd redeploy's teardown needed.
+
+**Teardown order used** (same as the documented §16 procedure, against the 3rd
+deployment's IDs): empty both versioned S3 buckets → delete 3 KBs → delete S3 Vectors
+indexes then the vector bucket → delete Gateway/Runtime/Memory/Guardrail → delete the
+CFN stack (waited for `stack-delete-complete`) → verify everything gone via live
+`describe`/`list` calls. Everything confirmed removed; Memory alone still showed
+`DELETING` at verification time - the same async pattern documented in every prior
+teardown ([[L19]], [[L26]]), not a problem.
+
+**Branch merged and pushed:** `fix/task6-real-observability` → `main`, then pushed to
+`origin`. This is the branch that carries the entire real Task 6 fix, the 3rd redeploy,
+and all evidence/documentation from this session - `main` was otherwise untouched
+throughout (per the git-hygiene correction earlier this session, [[L27]]).

@@ -575,26 +575,30 @@ Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-class
 
 ## 16. Active AWS resources — teardown checklist
 
-> ⚠️ **UPDATED 2026-09-16 — resources are live again (3rd redeploy).** Everything
-> below this note through the "Currently created (2nd redeploy...)" table is
-> historical (accurate as of the 2026-09-13 teardown, then stayed torn down through
-> [[L26]]). **Current live state, suffix `434837e0`** (see `lessons_learned.md`
-> [[L28]] for the redeploy itself):
+> ✅ **Torn down again 2026-09-16**, after the 3rd redeploy served its purpose
+> (real 120/120 + both required screenshots captured — [[L28]]/[[L29]]). **No AWS
+> resources are currently live.** The 3rd deployment (suffix `434837e0`) is documented
+> below for the historical record:
 >
 > | Resource | ID |
 > |---|---|
-> | CFN stack | `udacity-agentcore` — `CREATE_COMPLETE` |
-> | S3 Vectors bucket | `udacity-agentcore-vectors-187021010483-434837e0` + 3 indexes |
-> | Knowledge Base — Returns | `4IRFSZVYIS` |
-> | Knowledge Base — Shipping | `UENXOCQKML` |
-> | Knowledge Base — Warranty | `K5TVHTPUV9` |
-> | Guardrail | `o06m2z42rocx` (v1) |
-> | AgentCore Runtime | `udacity_agentcore_runtime-nHjmkE2yLV` |
-> | AgentCore Memory | `udacity_agentcore_memory-vXHr7I7rzB` |
+> | CFN stack | `udacity-agentcore` — was `CREATE_COMPLETE`, now deleted |
+> | S3 Vectors bucket | `udacity-agentcore-vectors-187021010483-434837e0` + 3 indexes — deleted |
+> | Knowledge Base — Returns | `4IRFSZVYIS` — deleted |
+> | Knowledge Base — Shipping | `UENXOCQKML` — deleted |
+> | Knowledge Base — Warranty | `K5TVHTPUV9` — deleted |
+> | Guardrail | `o06m2z42rocx` (v1) — deleted |
+> | AgentCore Runtime | `udacity_agentcore_runtime-nHjmkE2yLV` — deleted |
+> | AgentCore Gateway | `novamart-support-434837e0-ysxoo2rtux` — deleted (not part of the graded rubric, created by pre-written `deploy_all()` step 6/6) |
+> | AgentCore Memory | `udacity_agentcore_memory-vXHr7I7rzB` — `DELETING` at verification time (async, normal — same pattern as every prior teardown) |
 >
-> `.env` holds the full set. Real, verified 120/120 against these exact resources
-> (`evidence/test-scores/`). **Not yet torn down** — decide when to do so; the
-> teardown procedure below still applies, just against these IDs instead.
+> Verified via live `describe`/`list` calls after teardown: CFN stack gone
+> (`ValidationError: ... does not exist`), no `udacity-agentcore` S3 buckets, no S3
+> Vectors buckets, no KBs, no guardrails, no runtimes. `.env`'s IDs are now stale
+> pointers, kept as a record of what was built and verified. No CloudWatch Logs
+> Delivery resources existed this time to clean up (the real Task 6 fix from §18
+> doesn't use that API, unlike the 2nd redeploy's workaround — nothing to delete
+> there). See `lessons_learned.md` for the full teardown entry.
 
 ✅ **Torn down again 2026-09-13** — see the new "Teardown executed" note below. **No AWS
 resources are currently live** on the personal account (`187021010483`). The table
