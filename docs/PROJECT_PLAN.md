@@ -575,10 +575,19 @@ Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-class
 
 ## 16. Active AWS resources — teardown checklist
 
-> 🟢 **Live again 2026-09-16 — 4th redeploy** (suffix `a29f01a0`), to close reviewer
+> ✅ **Torn down 2026-09-16 (4th redeploy) — project passed review, no AWS resources
+> currently live.** Ran the documented procedure below (KBs + data sources → S3
+> Vectors indexes + vector bucket → Guardrail/Runtime/Gateway/Memory → emptied both
+> CFN-managed S3 buckets → CFN stack delete), then independently verified via live
+> `list`/`describe` calls: Guardrails, Runtimes, Gateways, S3 Vectors buckets, the 2
+> S3 buckets, the CFN stack, and all 3 DynamoDB tables are all confirmed gone. KBs and
+> Memory showed `DELETING` at verification time — same normal async pattern as every
+> prior teardown ([[L19]], [[L26]]). See `lessons_learned.md` [[L32]] for the full
+> entry. `.env`'s IDs are now stale pointers, kept as a historical record.
+
+> 🟢 **Was live 2026-09-16 — 4th redeploy** (suffix `a29f01a0`), to close reviewer
 > feedback that required AWS Console screenshots of a live deployment (see [[L31]]).
-> **Resources are currently live and should NOT be torn down until the reviewer
-> feedback's screenshots are captured** (see `evidence/required/README.md`):
+> Table below is kept for the historical record:
 >
 > | Resource | ID |
 > |---|---|

@@ -638,9 +638,9 @@ Service Map visibility, not just correct trace nesting.
 | Region | us-east-1 |
 | Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`, currently on branch `fix/reviewer-feedback-evidence` (branched from `main` per the user's explicit "use a new branch, dont do everything in main" — see [[L31]]); no git remote configured for the starter-file diff (starter files verified against upstream via `gh api`/`curl`, see L12 — though see [[L27]] on that verification's staleness) |
 | `.env` | repo root, gitignored |
-| Stack | `udacity-agentcore` — 🟢 **live again 2026-09-16, 4th redeploy** (suffix `a29f01a0`), to capture reviewer-requested evidence ([[L31]]). Do not tear down until that evidence is captured. |
-| Data | seeded 2026-09-16 (4th redeploy): 4 customers, 12 orders, 6 policy docs |
-| **Status** | ✅ **Reviewer feedback closed out.** Core work was already confirmed sound by a real reviewer pass (positive overall, KB IDs and X-Ray screenshot both confirmed correct) — real, verified 120/120 (100%) reconfirmed against this (4th) redeploy. All 5 reviewer-requested screenshot categories now captured ([[L31]]): `agent_orchestrator.py test` CLI run, 120/120 score, Knowledge Bases (status + synced data sources + the S3 Vectors vector bucket/index binding, found via S3's own "Vector buckets" console section rather than anywhere in Bedrock's KB pages), AgentCore Runtime + Guardrail, and the X-Ray Service Map. AWS resources still live (suffix `a29f01a0`) pending a teardown decision. |
+| Stack | `udacity-agentcore` — ✅ **torn down 2026-09-17** (4th redeploy, suffix `a29f01a0`), after the project passed review ([[L32]]). No AWS resources currently live. |
+| Data | none live — was seeded 2026-09-16 (4th redeploy): 4 customers, 12 orders, 6 policy docs, now torn down with the rest of the stack |
+| **Status** | ✅ **Project passed Udacity review.** All 5 reviewer-requested screenshot categories were captured against the 4th redeploy ([[L31]]): `agent_orchestrator.py test` CLI run, 120/120 score, Knowledge Bases (status + synced data sources + the S3 Vectors vector bucket/index binding, found via S3's own "Vector buckets" console section rather than anywhere in Bedrock's KB pages), AgentCore Runtime + Guardrail, and the X-Ray Service Map. AWS resources torn down and independently verified gone ([[L32]]). Branch `fix/reviewer-feedback-evidence` still unmerged — separate decision pending from the user. |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
@@ -1412,3 +1412,37 @@ under the *regular* S3 "Buckets" list - that's the CFN template's unused plain-S
 
 All 5 deliverables now complete: `evidence/required/README.md` and `evidence/README.md`
 both updated to ✅.
+
+---
+
+## L32 — 2026-09-17: Project passed review — final teardown of the 4th redeploy
+
+User confirmed the project **passed** Udacity's review and asked to tear down all live
+AWS resources (suffix `a29f01a0`, per [[L31]]). Same documented §16 procedure as every
+prior teardown ([[L19]], [[L26]], [[L30]]), executed directly (not via a fork, since a
+destructive action against real billed resources warrants first-hand verification
+rather than trusting a subagent's report):
+
+1. Discovered every live resource ID **fresh via `list`/`describe` calls** (not by
+   trusting `.env`/`PROJECT_PLAN.md`'s transcription) - confirmed all matched the
+   documented suffix `a29f01a0` exactly, including that the Gateway
+   (`novamart-support-a29f01a0-s9mkozly3s`) had **zero targets** registered (simpler
+   than the 2nd redeploy's failed-Lambda-targets case).
+2. **Teardown order:** delete 3 KBs' data sources then the KBs → delete the 3 S3
+   Vectors indexes then the vector bucket → delete Guardrail → delete AgentCore
+   Runtime → delete Gateway → delete Memory → empty both CFN-managed (versioned) S3
+   buckets (`list_object_versions` + `delete_objects`, including delete markers) →
+   delete the CFN stack and wait on `stack_delete_complete`.
+3. **Independently re-verified afterward** via fresh `list`/`describe` calls (not the
+   teardown script's own print output): Guardrails, Runtimes, Gateways, S3 Vectors
+   buckets, both S3 buckets, the CFN stack, and all 3 DynamoDB tables all confirmed
+   gone (`ValidationError: ... does not exist` for the stack, empty lists everywhere
+   else). KBs and Memory still showed `DELETING` at verification time - the same
+   normal async pattern as every prior teardown, not a problem.
+
+`.env`'s IDs are now stale pointers again, kept as the historical record of the 4th
+redeploy per the established pattern - not cleared out.
+
+No AWS resources are live on the account (`187021010483`) as of this entry. Nothing
+merged/pushed this session - branch `fix/reviewer-feedback-evidence` still holds the
+evidence commits, separate decision from the user on if/when to merge.
