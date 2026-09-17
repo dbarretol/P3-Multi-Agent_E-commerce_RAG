@@ -575,10 +575,33 @@ Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-class
 
 ## 16. Active AWS resources — teardown checklist
 
-> ✅ **Torn down again 2026-09-16**, after the 3rd redeploy served its purpose
-> (real 120/120 + both required screenshots captured — [[L28]]/[[L29]]). **No AWS
-> resources are currently live.** The 3rd deployment (suffix `434837e0`) is documented
-> below for the historical record:
+> 🟢 **Live again 2026-09-16 — 4th redeploy** (suffix `a29f01a0`), to close reviewer
+> feedback that required AWS Console screenshots of a live deployment (see [[L31]]).
+> **Resources are currently live and should NOT be torn down until the reviewer
+> feedback's screenshots are captured** (see `evidence/required/README.md`):
+>
+> | Resource | ID |
+> |---|---|
+> | CFN stack | `udacity-agentcore` — `CREATE_COMPLETE` |
+> | S3 Vectors bucket | `udacity-agentcore-vectors-187021010483-a29f01a0` + 3 indexes (`returns/shipping/warranty-policy-index`) |
+> | Knowledge Base — Returns | `NWLWTRHQMK` — `ACTIVE`, data source synced |
+> | Knowledge Base — Shipping | `DBXGPHVIN9` — `ACTIVE`, data source synced |
+> | Knowledge Base — Warranty | `TQHKJ83VJW` — `ACTIVE`, data source synced |
+> | Guardrail | `83i9l4zhozjl` (v1) — `READY` |
+> | AgentCore Runtime | `udacity_agentcore_runtime-zrlU0uFRgf` — `READY` |
+> | AgentCore Gateway | `novamart-support-a29f01a0` (not part of the graded rubric, created by pre-written `deploy_all()` step 6/6) |
+> | AgentCore Memory | `udacity_agentcore_memory-9RwY6S4UZy` — `ACTIVE`, `SUMMARIZATION` strategy `ACTIVE` |
+>
+> All verified live via `describe`/`list` calls, not just deploy-script output. Real
+> `tests/test_agent.py all` → **120/120 (100%)**, re-verified independently. `.env`
+> updated with all new IDs. See `lessons_learned.md` [[L31]] for the full redeploy entry
+> (including a new `deploy_all()` ordering wrinkle found this time).
+
+> ✅ **Torn down 2026-09-16 (3rd redeploy)**, after that redeploy served its purpose
+> (real 120/120 + both required screenshots captured — [[L28]]/[[L29]]) — then a
+> reviewer pass asked for more evidence than that redeploy had captured, hence the 4th
+> redeploy above. The 3rd deployment (suffix `434837e0`) is documented below for the
+> historical record:
 >
 > | Resource | ID |
 > |---|---|

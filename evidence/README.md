@@ -9,18 +9,24 @@ collection (built before Task 6's real fix was ported in) is kept at
 [`../evidence-old/`](../evidence-old/) for the historical record, not as part
 of this submission.
 
-> **Status: complete.** Regenerated against a fresh deployment now that
-> Task 6 has a real, working implementation (see `docs/PROJECT_PLAN.md` §18)
-> instead of the AWS-SDK-gap workaround the old evidence documented. Real,
-> verified **120/120 (100%)** — see `test-scores/all.txt` — and both required
-> screenshots are captured — see `required/README.md`.
+> **Status: in progress — 4th redeploy (2026-09-16, suffix `a29f01a0`).**
+> A reviewer pass on the previous submission asked for more: a screenshot of
+> `python src/agent_orchestrator.py test`, and AWS Console screenshots proving
+> the Knowledge Bases and AgentCore Runtime/Guardrails are fully deployed
+> (S3 Vectors backing store per KB, data source sync status). Everything was
+> torn down after that submission, so this is a fresh live deployment. Real,
+> verified **120/120 (100%)** — see `test-scores/all.txt`. Screenshots are
+> pending — see `required/README.md` for exactly what's needed and where.
 
 ## The required deliverables
 
-Per the project instructions, submission requires: (1) completed
-`agent_orchestrator.py`, (2) populated `.env`, (3) a screenshot of the
-120/120 test score, and (4) the X-Ray Service Map screenshot. (1) and (2)
-are the source/config already in this repo; (3) and (4) are in
+Per the project instructions plus reviewer feedback, submission requires:
+(1) completed `agent_orchestrator.py`, (2) populated `.env`, (3) a screenshot
+of `python src/agent_orchestrator.py test` passing, (4) a screenshot of the
+120/120 `tests/test_agent.py all` score, (5) AWS Console screenshots of the
+3 Knowledge Bases (S3 Vectors backing store + synced data sources) and the
+AgentCore Runtime/Guardrails, and (6) the X-Ray Service Map screenshot.
+(1) and (2) are the source/config already in this repo; (3)-(6) are in
 [`required/`](required/) — see [`required/README.md`](required/README.md).
 
 ## Test scores, by rubric section

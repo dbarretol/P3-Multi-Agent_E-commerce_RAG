@@ -636,11 +636,11 @@ Service Map visibility, not just correct trace nesting.
 | Mode | Local Windows 11, Git Bash + PowerShell, `uv` |
 | AWS account | `187021010483` (personal), IAM user `udacity-agentcore-dev`, `AdministratorAccess`, permanent key (no session token) — see [[L11]] |
 | Region | us-east-1 |
-| Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`, currently on branch `fix/task6-real-observability` (see [[L27]] re: another unexpected auto-branch-switch, same class as [[L13]]/[[L23]]); no git remote configured (starter files verified against upstream via `gh api`/`curl`, see L12 — though see [[L27]] on that verification's staleness) |
+| Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`, currently on branch `fix/reviewer-feedback-evidence` (branched from `main` per the user's explicit "use a new branch, dont do everything in main" — see [[L31]]); no git remote configured for the starter-file diff (starter files verified against upstream via `gh api`/`curl`, see L12 — though see [[L27]] on that verification's staleness) |
 | `.env` | repo root, gitignored |
-| Stack | `udacity-agentcore` — ✅ torn down again 2026-09-16 ([[L30]]), after the 3rd redeploy (suffix `434837e0`) served its purpose. **No AWS resources currently live.** |
-| Data | last seeded 2026-09-16 (now deleted with the stack): 4 customers, 15 orders, 6 policy docs |
-| **Status** | ✅ **Complete and submitted-ready — real, verified 120/120 (100%).** The [[L17]] Task 6 SDK-gap ceiling is resolved: a real fix shipped upstream ([[L27]]) was ported in, replacing the [[L21]]-[[L23]] CloudWatch-Logs-Delivery-API workaround. Redeployed and independently re-verified ([[L28]]) — all 5 tasks pass genuinely, no mocked/faked checks. Both required screenshots captured ([[L29]]): 120/120 test score and X-Ray Service Map (9-node graph, Orchestrator → 4 workers + 3 KBs). All 4 official deliverables in place. Resources torn down and branch merged/pushed to `main` ([[L30]]). |
+| Stack | `udacity-agentcore` — 🟢 **live again 2026-09-16, 4th redeploy** (suffix `a29f01a0`), to capture reviewer-requested evidence ([[L31]]). Do not tear down until that evidence is captured. |
+| Data | seeded 2026-09-16 (4th redeploy): 4 customers, 12 orders, 6 policy docs |
+| **Status** | 🟡 **Reviewer feedback in progress.** Core work is done and was already confirmed sound by a real reviewer pass (positive overall, KB IDs and X-Ray screenshot both confirmed correct) — real, verified 120/120 (100%) reconfirmed against this redeploy. Reviewer asked for more evidence: a `python src/agent_orchestrator.py test` screenshot, and AWS Console screenshots proving the KBs (S3 Vectors backing store + synced data sources) and AgentCore Runtime/Guardrails are deployed ([[L31]]). `evidence/required/` reorganized into 5 categories; all 5 pending the user's own screenshots as of this entry. |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
@@ -1304,3 +1304,70 @@ teardown ([[L19]], [[L26]]), not a problem.
 `origin`. This is the branch that carries the entire real Task 6 fix, the 3rd redeploy,
 and all evidence/documentation from this session - `main` was otherwise untouched
 throughout (per the git-hygiene correction earlier this session, [[L27]]).
+
+---
+
+## L31 — 2026-09-16: Reviewer feedback on the 3rd-redeploy submission - 4th redeploy to close the gaps
+
+Got real Udacity reviewer feedback on the submission [[L30]] shipped. Overall positive
+("production-grade multi-agent customer support system... good example of modular and
+well-documented agent code"), all 3 `.env` KB IDs confirmed matching the reviewer's own
+AWS console view, and the X-Ray Service Map screenshot confirmed showing
+`NovaMart-Orchestrator` connected to worker + KB nodes - so the core work and the [[L29]]
+evidence were sound. But it flagged concrete gaps, none of which had been asked for
+before this pass:
+
+1. **Missing a screenshot of `python src/agent_orchestrator.py test`** - a different
+   command than `tests/test_agent.py`, easy to conflate with the 120/120 pytest
+   evidence already captured. It's the orchestrator's own CLI test mode (3 real
+   scenarios, wrapped in `tracer.trace_request` - the actual thing that produces the
+   X-Ray traces behind the Service Map screenshot). Never captured a screenshot of this
+   specific command's output before.
+2. **Missing AWS Console screenshots of the Knowledge Base deployments** - specifically
+   that each KB uses the **S3 Vectors backing store** pointing at the correct
+   `VectorStoreBucket`, with its matching vector index name, and that each KB's data
+   source shows as **synced**. The `.env` IDs alone weren't enough - reviewer wants the
+   console configuration visually confirmed.
+3. **"fully deploy your solution including... agent core deployment"** - read as also
+   wanting the AgentCore Runtime and Guardrails console pages screenshotted, not just
+   inferred from `.env` values.
+
+**Problem: all of it required live resources, and everything was torn down in [[L30]]**
+right after the reviewed submission. Redeployed a 4th time (new suffix `a29f01a0`) via a
+background fork, same procedure as [[L28]]'s 3rd redeploy, on a **new branch**
+(`fix/reviewer-feedback-evidence`) - caught mid-task that the previous merge had left the
+working tree on `main`, and the user correctly stopped that before any new commits
+landed there ("use a new branch, dont do everything in main"). Branched before touching
+anything.
+
+**New deploy_all() wrinkle, beyond the [[L28]]-documented `ConflictException` timing
+bug:** `deploy_to_agentcore_runtime()` short-circuits on an existing runtime *name* and
+does not update its environment variables on a re-run. Since `deploy_all()`'s Step 1
+(build agent graph) runs before the KBs exist yet, the first `deploy` pass created a
+runtime whose baked-in env vars had empty/stale KB IDs. Fix: create the 3 KBs first,
+delete that premature runtime, re-run `deploy` so the runtime is created fresh *after*
+the KBs exist (correct KB IDs baked in from the start), then apply the same [[L28]]
+workaround (wait for `READY`, re-run `configure_observability()` standalone). **Lesson:**
+`deploy_all()`'s pre-written step ordering (guardrail → runtime → memory → observability,
+with KB creation happening separately/earlier via CLI per [[L14]]) only produces a
+fully-correct runtime if the KBs already exist *before* the first `deploy` invocation -
+worth remembering for any future redeploy rather than re-discovering this each time.
+
+Independently verified (not just trusting the fork's report): live `get-knowledge-base`
+calls confirm all 3 KBs `ACTIVE`, `get-agent-runtime` confirms `READY`, and re-ran the
+full `tests/test_agent.py all` suite myself against the fresh `.env` - real **120/120
+(100%)**, matching the fork's claim. Also re-captured all 6 per-task `.txt` evidence
+files fresh (old ones referenced the now-deleted 3rd-redeploy resource IDs) - hit the
+same [[L1]]/Windows-tmp-path class of issue in a new form: `python3`'s own `/tmp`
+resolves to `C:\tmp`, a *different* path than Git-Bash's `/tmp` (which Git-Bash maps to
+`C:\Users\...\AppData\Local\Temp` via its own MSYS layer) - a plain shell/Python path
+mismatch, not the previously-documented encoding issue. Fixed by resolving the real path
+with `cygpath -w /tmp` first and passing that explicit Windows path to Python instead of
+assuming `/tmp` means the same thing to both.
+
+Reorganized `evidence/required/` into 5 categories (CLI test screenshot, 120/120
+screenshot, KB console screenshots, AgentCore deployment screenshots, X-Ray Service Map)
+and moved the stale 3rd-redeploy screenshots to
+`evidence-old/required-3rd-redeploy/` - same "keep the historical record, mark current
+work as current" pattern as [[L29]]. All 5 screenshot categories are still pending the
+user's own AWS Console/terminal captures as of this entry.
