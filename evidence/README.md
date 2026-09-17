@@ -9,14 +9,15 @@ collection (built before Task 6's real fix was ported in) is kept at
 [`../evidence-old/`](../evidence-old/) for the historical record, not as part
 of this submission.
 
-> **Status: in progress — 4th redeploy (2026-09-16, suffix `a29f01a0`).**
+> **Status: complete — 4th redeploy (2026-09-16, suffix `a29f01a0`).**
 > A reviewer pass on the previous submission asked for more: a screenshot of
 > `python src/agent_orchestrator.py test`, and AWS Console screenshots proving
 > the Knowledge Bases and AgentCore Runtime/Guardrails are fully deployed
 > (S3 Vectors backing store per KB, data source sync status). Everything was
-> torn down after that submission, so this is a fresh live deployment. Real,
-> verified **120/120 (100%)** — see `test-scores/all.txt`. Screenshots are
-> pending — see `required/README.md` for exactly what's needed and where.
+> torn down after that submission, so this required a fresh live deployment.
+> Real, verified **120/120 (100%)** — see `test-scores/all.txt`. All 5
+> reviewer-requested screenshot categories are now captured — see
+> `required/README.md`.
 
 ## The required deliverables
 

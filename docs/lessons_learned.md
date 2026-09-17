@@ -640,7 +640,7 @@ Service Map visibility, not just correct trace nesting.
 | `.env` | repo root, gitignored |
 | Stack | `udacity-agentcore` — 🟢 **live again 2026-09-16, 4th redeploy** (suffix `a29f01a0`), to capture reviewer-requested evidence ([[L31]]). Do not tear down until that evidence is captured. |
 | Data | seeded 2026-09-16 (4th redeploy): 4 customers, 12 orders, 6 policy docs |
-| **Status** | 🟡 **Reviewer feedback in progress.** Core work is done and was already confirmed sound by a real reviewer pass (positive overall, KB IDs and X-Ray screenshot both confirmed correct) — real, verified 120/120 (100%) reconfirmed against this redeploy. Reviewer asked for more evidence: a `python src/agent_orchestrator.py test` screenshot, and AWS Console screenshots proving the KBs (S3 Vectors backing store + synced data sources) and AgentCore Runtime/Guardrails are deployed ([[L31]]). `evidence/required/` reorganized into 5 categories; all 5 pending the user's own screenshots as of this entry. |
+| **Status** | ✅ **Reviewer feedback closed out.** Core work was already confirmed sound by a real reviewer pass (positive overall, KB IDs and X-Ray screenshot both confirmed correct) — real, verified 120/120 (100%) reconfirmed against this (4th) redeploy. All 5 reviewer-requested screenshot categories now captured ([[L31]]): `agent_orchestrator.py test` CLI run, 120/120 score, Knowledge Bases (status + synced data sources + the S3 Vectors vector bucket/index binding, found via S3's own "Vector buckets" console section rather than anywhere in Bedrock's KB pages), AgentCore Runtime + Guardrail, and the X-Ray Service Map. AWS resources still live (suffix `a29f01a0`) pending a teardown decision. |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
@@ -1371,3 +1371,44 @@ and moved the stale 3rd-redeploy screenshots to
 `evidence-old/required-3rd-redeploy/` - same "keep the historical record, mark current
 work as current" pattern as [[L29]]. All 5 screenshot categories are still pending the
 user's own AWS Console/terminal captures as of this entry.
+
+**All 5 categories captured over several rounds.** The CLI test (14 screenshots), 120/120
+(1 screenshot), AgentCore Runtime + Guardrail (2 screenshots), and X-Ray Service Map (4
+screenshots) all came in clean on the first pass. The Knowledge Base category took three
+attempts to get right - worth documenting the wrong turns, since they reveal a real gap
+in where AWS's own console surfaces this information:
+
+1. First attempt: KB overview pages (3 screenshots) - showed KB status `Available` and
+   data source status `Available`, but nothing about *which* S3 Vectors bucket/index
+   backs each KB (the overview page just says RAG type "Vector store", no bucket/index
+   name).
+2. I incorrectly guessed the KB's **Edit** page would show it (assumed a "Vector
+   database" wizard step). User first landed on **Edit data source** (a different page -
+   shows the S3 *document* source location, `policies/warranty/` etc., nothing to do with
+   vectors) - my instructions weren't specific enough about which "Edit" button. Corrected
+   to the KB-level Edit page, which turned out to be a dead end too: it only exposes
+   name/description/log delivery - AWS's console does **not** allow editing (or
+   displaying) the vector store binding after KB creation, so this info simply isn't
+   there.
+3. Also checked the KB's Observability/CloudWatch panel on a hunch - empty (no metrics
+   yet, unrelated to the vector store question anyway).
+4. **Correct location:** S3 Vectors is a distinct AWS service with its own console
+   section, not a tab inside the regular S3 bucket browser and not reachable through
+   Bedrock at all. In the S3 console's left sidebar there's a separate **"Vector
+   buckets"** entry (sibling to "Buckets", easy to miss). That's where
+   `udacity-agentcore-vectors-187021010483-a29f01a0` shows up as an `s3vectors:` ARN
+   resource with its own **Vector indexes** tab listing all 3 indexes
+   (`{returns,shipping,warranty}-policy-index`) with full ARNs. Two screenshots (the
+   vector buckets list, then the vector-indexes tab) closed the gap completely.
+
+**Lesson: don't assume a resource's configuration is discoverable from the console page
+of whatever *references* it (the KB) - S3 Vectors is a genuinely separate service/ARN
+namespace from both regular S3 and from Bedrock (same fact as [[L14]], but this is the
+first time it mattered for *finding a screenshot* rather than for API/teardown code) and
+has to be navigated to directly.** User also independently caught that a bucket sharing
+the exact same name (`udacity-agentcore-vectors-187021010483-a29f01a0`) shows up empty
+under the *regular* S3 "Buckets" list - that's the CFN template's unused plain-S3
+`VectorStoreBucket` ([[L14]]), a coincidentally-identical name, not the same resource.
+
+All 5 deliverables now complete: `evidence/required/README.md` and `evidence/README.md`
+both updated to ✅.

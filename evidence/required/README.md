@@ -34,34 +34,29 @@ feedback on the previous submission (see `docs/lessons_learned.md` L31):
 > `Score: 120/120 pts (100%)` / "Perfect score!", all showing the current
 > KB IDs (`NWLWTRHQMK`/`DBXGPHVIN9`/`TQHKJ83VJW`) matching `.env`.
 
-## 3. AWS Console — Knowledge Base deployments — 🟡 partially done
+## 3. AWS Console — Knowledge Base deployments — ✅ done
 
-> [`knowledge-bases/`](knowledge-bases/) now has 9 screenshots:
+> [`knowledge-bases/`](knowledge-bases/) has 11 screenshots:
 > - `01`-`03`: each KB's overview (ID, status `Available`, RAG type
 >   `Vector store`) and its data source status `Available`.
 > - `04`/`06`/`08`: each data source's own detail page — sync history
 >   `Complete`, 2 scanned / 2 added / 0 failed.
 > - `05`/`07`/`09`: each data source's Documents list — both seeded policy
 >   docs `INDEXED`.
+> - `10`: the **S3 Vectors** service's "Vector buckets" list (a separate
+>   AWS resource type from regular S3 — see `docs/lessons_learned.md` L14),
+>   showing `udacity-agentcore-vectors-187021010483-a29f01a0`
+>   (`arn:aws:s3vectors:...`).
+> - `11`: that vector bucket's **3 vector indexes** —
+>   `returns-policy-index`, `shipping-policy-index`, `warranty-policy-index`
+>   — each with its full ARN, matching the 3 KBs exactly.
 >
-> **This fully and concretely covers "each KB's data source has been
-> synced."**
->
-> **Still missing:** none of the 9 screenshots show the actual **S3 Vectors
-> bucket name / vector index name** the reviewer explicitly asked for ("uses
-> S3 Vectors backing store pointing to the correct VectorStoreBucket") — all
-> 9 are the KB/data-source pages, which only say "Vector store" generically,
-> not which bucket/index it points to. That detail lives on the KB's
-> **Edit** page (Vector database configuration section) — please open each
-> KB → **Edit** → screenshot the section showing:
-> - Vector store: **Amazon S3 Vectors**
-> - Vector bucket: `udacity-agentcore-vectors-187021010483-a29f01a0`
-> - Vector index: `returns-policy-index` / `shipping-policy-index` /
->   `warranty-policy-index` (matching the KB)
->
-> Add these as `10-returns-kb-vector-config.png`,
-> `11-shipping-kb-vector-config.png`, `12-warranty-kb-vector-config.png` (or
-> similar) in the same folder.
+> Together: each KB is `Available` with a synced data source (`01`-`09`),
+> and the S3 Vectors backing store + matching index per KB is confirmed
+> (`10`-`11`) — both parts of the reviewer's ask are covered. Note: AWS's
+> Bedrock KB console (both the overview page and the Edit wizard) doesn't
+> surface the vector-store binding directly — it had to be found via the
+> S3 Vectors service's own console pages instead.
 
 ## 4. AWS Console — AgentCore deployment — ✅ done
 
@@ -83,6 +78,4 @@ feedback on the previous submission (see `docs/lessons_learned.md` L31):
 
 ---
 
-**Remaining gap: 1 item** — the KB vector-store config screenshots (#3).
-Once those are in, update this README's status lines (and `../README.md`)
-to all-✅.
+**All 5 deliverables complete.** See `../README.md` for overall status.
