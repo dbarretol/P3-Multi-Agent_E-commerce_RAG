@@ -18,99 +18,68 @@ feedback on the previous submission (see `docs/lessons_learned.md` L31):
 > VectorStoreBucket and each KB's data source has been synced" / "missing
 > screenshots for `python src/agent_orchestrator.py test` passes results"
 
-## 1. `python src/agent_orchestrator.py test` — ⚠️ needs your screenshot
+## 1. `python src/agent_orchestrator.py test` — ✅ done
 
-> This is a **different command** than `tests/test_agent.py` — it's the
-> orchestrator's own built-in test mode (3 real customer-support scenarios,
-> run through the real multi-agent graph with live CloudWatch/X-Ray tracing).
-> Already confirmed working end-to-end against this deployment (3 scenarios
-> completed, 3 X-Ray traces published) — this screenshot just needs to be
-> your own terminal capture of a real run.
->
-> **To capture:** from `project/starter`, with the venv active and `.env`
-> loaded, run:
-> ```
-> python src/agent_orchestrator.py test
-> ```
-> Screenshot the terminal showing all 3 scenarios' output (may need 2+ images
-> if it doesn't fit one screen, same as the test-score capture below — name
-> them `01-....png`, `02-....png` etc.).
->
-> Save into [`orchestrator-cli-test/`](orchestrator-cli-test/).
+> 14 sequential terminal screenshots in
+> [`orchestrator-cli-test/`](orchestrator-cli-test/) (`01-of-14.png` ...
+> `14-of-14.png`), scrolled top-to-bottom through the full run: all 3
+> scenarios (CUST-002 return request, CUST-002 premium policy question,
+> CUST-003 discount calculation), each ending with a real
+> `X-Ray trace ... published successfully` confirmation line.
 
-## 2. `python tests/test_agent.py all` → 120/120 — ⚠️ needs your screenshot
+## 2. `python tests/test_agent.py all` → 120/120 — ✅ done
 
-> Re-verified 2026-09-16 against this deployment: real, live **120/120
-> (100%)** — see `../test-scores/all.txt`. The previous screenshot
-> (3rd redeploy) is stale since those KB IDs/runtime no longer exist —
-> needs a fresh capture so the on-screen KB IDs match the current `.env`.
->
-> **To capture:** from `project/starter`, with the venv active and `.env`
-> loaded:
-> ```
-> python tests/test_agent.py all
-> ```
-> Screenshot the terminal (likely 2 images, top half + bottom half, same as
-> before). Save into [`test-score-120/`](test-score-120/).
+> [`test-score-120/01-all-tasks-and-final-score-120.png`](test-score-120/) —
+> one screenshot, all of Task 2 through Task 6 plus
+> `Score: 120/120 pts (100%)` / "Perfect score!", all showing the current
+> KB IDs (`NWLWTRHQMK`/`DBXGPHVIN9`/`TQHKJ83VJW`) matching `.env`.
 
-## 3. AWS Console — Knowledge Base deployments — ⚠️ needs your screenshots
+## 3. AWS Console — Knowledge Base deployments — 🟡 partially done
 
-> Reviewer specifically wants to see, **for each of the 3 KBs**: it uses the
-> **S3 Vectors backing store**, pointing to the correct `VectorStoreBucket`
-> (`udacity-agentcore-vectors-187021010483-a29f01a0`), with its matching
-> vector index name, **and** that its data source shows as synced.
+> [`knowledge-bases/`](knowledge-bases/) has one screenshot per KB
+> (`01-returns...`, `02-shipping...`, `03-warranty...`), each showing the KB
+> ID, status `Available`, RAG type `Vector store`, and its data source
+> (`returns-datasource` / `shipping-datasource` / `warranty-datasource`)
+> status `Available` (synced). **This covers "data source synced" fully.**
 >
-> **To capture**, in the AWS Console (region `us-east-1`):
-> 1. Go to **Amazon Bedrock → Knowledge Bases**. Screenshot the list showing
->    all 3 KBs (`returns`, `shipping`, `warranty`) with status `Available`.
-> 2. Open **each** KB's detail page individually. On each, screenshot the
->    section showing:
->    - Storage configuration: **S3 Vectors**, bucket
->      `udacity-agentcore-vectors-187021010483-a29f01a0`, vector index
->      (`returns-policy-index` / `shipping-policy-index` /
->      `warranty-policy-index` respectively)
->    - The **Data source** tab/section showing sync status = `Available`
->      (i.e. last sync completed, not "Syncing" or "Failed")
+> **Still missing:** none of the 3 screenshots show the actual **S3 Vectors
+> bucket name / vector index name** the reviewer explicitly asked for — the
+> KB overview page only says "Vector store" as the RAG type, not which
+> bucket/index it points to. That detail lives on the KB's **Edit** page
+> (Vector database configuration section) — please open each KB → **Edit**
+> → screenshot the section showing:
+> - Vector store: **Amazon S3 Vectors**
+> - Vector bucket: `udacity-agentcore-vectors-187021010483-a29f01a0`
+> - Vector index: `returns-policy-index` / `shipping-policy-index` /
+>   `warranty-policy-index` (matching the KB)
 >
-> That's 1 list screenshot + up to 2 per KB (config + data source) = ~7
-> images total, or fewer if a KB's detail page fits both in one screenshot.
-> Name them descriptively, e.g. `01-kb-list-all-three-active.png`,
-> `02-returns-kb-s3vectors-config.png`, `03-returns-kb-datasource-synced.png`,
-> `04-shipping-kb-s3vectors-config.png`, ... etc.
->
-> Save into [`knowledge-bases/`](knowledge-bases/).
+> Add these as `04-returns-kb-vector-config.png`,
+> `05-shipping-kb-vector-config.png`, `06-warranty-kb-vector-config.png` (or
+> similar) in the same folder.
 
-## 4. AWS Console — AgentCore deployment — ⚠️ needs your screenshots
+## 4. AWS Console — AgentCore deployment — 🟡 partially done
 
-> Reviewer wants to see the AgentCore side "fully deployed" too — Runtime
-> and Guardrails.
+> [`agentcore-deployment/01-runtime-ready.png`](agentcore-deployment/) shows
+> the Runtime (`udacity_agentcore_runtime-zrlU0uFRgf`) status `Ready`.
 >
-> **To capture:**
-> 1. **Bedrock AgentCore → Agent Runtime** → open
->    `udacity_agentcore_runtime-zrlU0uFRgf` → screenshot showing status
->    `READY`/`Active`.
-> 2. **Bedrock → Guardrails** → open `83i9l4zhozjl` (v1) → screenshot showing
->    it exists with its content/PII/topic policies, status `Ready`.
->
-> Save into [`agentcore-deployment/`](agentcore-deployment/).
+> **Still missing:** the Guardrail screenshot. Please go to **Bedrock →
+> Guardrails** → open `83i9l4zhozjl` (v1) → screenshot showing it exists
+> with its content/PII/topic policies, status `Ready`. Add as
+> `02-guardrail-ready.png` in the same folder.
 
-## 5. X-Ray Service Map — ⚠️ needs your screenshot (re-capture)
+## 5. X-Ray Service Map — ✅ done
 
-> The 3rd-redeploy screenshots are stale (those resources are deleted) —
-> needs a fresh capture against this deployment's live traces. 3 traces
-> already confirmed received (from the `agent_orchestrator.py test` run
-> above) — allow the usual 30-60s propagation window before opening the
-> console.
->
-> **To capture:** CloudWatch → X-Ray traces → Service map (region
-> `us-east-1`, 6h window). Same as before, the full graph likely won't fit
-> one screen — pan/zoom and capture multiple overlapping views, same
-> approach as last time.
->
-> Save into [`xray-service-map/`](xray-service-map/).
+> [`xray-service-map/`](xray-service-map/) — 4 pan/zoom screenshots against
+> this deployment's live traces. Together they show all 9 expected nodes
+> connected to `NovaMart-Orchestrator`: `Client`, `InventoryAgent`,
+> `RefundAgent`, `CommunicationAgent`, `KnowledgeBase:returns`,
+> `KnowledgeBase:warranty`, `KnowledgeBase:shipping` (image 01), plus
+> `RefundAgent`/`PolicyAgent`/`KnowledgeBase:returns` (02), the Orchestrator
+> reconverged with `KnowledgeBase:warranty`/`shipping`/`InventoryAgent` (03),
+> and `KnowledgeBase:shipping`/`InventoryAgent`/`CommunicationAgent` (04).
 
 ---
 
-Once all 5 categories above have real screenshots in place, update this
-README's status lines (and `../README.md`) to ✅, same pattern as the
-3rd-redeploy version.
+**Remaining gaps: 2 screenshots** — the KB vector-store config (#3) and the
+Guardrail page (#4). Once those are in, update this README's status lines
+(and `../README.md`) to all-✅.
