@@ -1,8 +1,10 @@
 # Test scores
 
 Captured terminal output of `python tests/test_agent.py <task>`, run
-2026-09-16 against the live deployment (3rd redeploy, suffix `434837e0`).
-Real, verified result: **120/120 (100%)** across all tasks.
+2026-09-16 against the live deployment (4th redeploy, suffix `a29f01a0`,
+new KB IDs `NWLWTRHQMK`/`DBXGPHVIN9`/`TQHKJ83VJW`, superseding the 3rd
+redeploy's now-torn-down resources). Real, verified result:
+**120/120 (100%)** across all tasks.
 
 | File | Command | Score |
 |---|---|---|

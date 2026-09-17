@@ -575,10 +575,42 @@ Verified **2026-09-12** against `github.com/udacity/cd14764-aws-agentic-c3-class
 
 ## 16. Active AWS resources — teardown checklist
 
-> ✅ **Torn down again 2026-09-16**, after the 3rd redeploy served its purpose
-> (real 120/120 + both required screenshots captured — [[L28]]/[[L29]]). **No AWS
-> resources are currently live.** The 3rd deployment (suffix `434837e0`) is documented
-> below for the historical record:
+> ✅ **Torn down 2026-09-16 (4th redeploy) — project passed review, no AWS resources
+> currently live.** Ran the documented procedure below (KBs + data sources → S3
+> Vectors indexes + vector bucket → Guardrail/Runtime/Gateway/Memory → emptied both
+> CFN-managed S3 buckets → CFN stack delete), then independently verified via live
+> `list`/`describe` calls: Guardrails, Runtimes, Gateways, S3 Vectors buckets, the 2
+> S3 buckets, the CFN stack, and all 3 DynamoDB tables are all confirmed gone. KBs and
+> Memory showed `DELETING` at verification time — same normal async pattern as every
+> prior teardown ([[L19]], [[L26]]). See `lessons_learned.md` [[L32]] for the full
+> entry. `.env`'s IDs are now stale pointers, kept as a historical record.
+
+> 🟢 **Was live 2026-09-16 — 4th redeploy** (suffix `a29f01a0`), to close reviewer
+> feedback that required AWS Console screenshots of a live deployment (see [[L31]]).
+> Table below is kept for the historical record:
+>
+> | Resource | ID |
+> |---|---|
+> | CFN stack | `udacity-agentcore` — `CREATE_COMPLETE` |
+> | S3 Vectors bucket | `udacity-agentcore-vectors-187021010483-a29f01a0` + 3 indexes (`returns/shipping/warranty-policy-index`) |
+> | Knowledge Base — Returns | `NWLWTRHQMK` — `ACTIVE`, data source synced |
+> | Knowledge Base — Shipping | `DBXGPHVIN9` — `ACTIVE`, data source synced |
+> | Knowledge Base — Warranty | `TQHKJ83VJW` — `ACTIVE`, data source synced |
+> | Guardrail | `83i9l4zhozjl` (v1) — `READY` |
+> | AgentCore Runtime | `udacity_agentcore_runtime-zrlU0uFRgf` — `READY` |
+> | AgentCore Gateway | `novamart-support-a29f01a0` (not part of the graded rubric, created by pre-written `deploy_all()` step 6/6) |
+> | AgentCore Memory | `udacity_agentcore_memory-9RwY6S4UZy` — `ACTIVE`, `SUMMARIZATION` strategy `ACTIVE` |
+>
+> All verified live via `describe`/`list` calls, not just deploy-script output. Real
+> `tests/test_agent.py all` → **120/120 (100%)**, re-verified independently. `.env`
+> updated with all new IDs. See `lessons_learned.md` [[L31]] for the full redeploy entry
+> (including a new `deploy_all()` ordering wrinkle found this time).
+
+> ✅ **Torn down 2026-09-16 (3rd redeploy)**, after that redeploy served its purpose
+> (real 120/120 + both required screenshots captured — [[L28]]/[[L29]]) — then a
+> reviewer pass asked for more evidence than that redeploy had captured, hence the 4th
+> redeploy above. The 3rd deployment (suffix `434837e0`) is documented below for the
+> historical record:
 >
 > | Resource | ID |
 > |---|---|

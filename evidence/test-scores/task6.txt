@@ -3,9 +3,9 @@
   Task 6 - Observability
 ───────────────────────────────────────────────────────
   ✓ PASS [+10pts] CloudWatch logging enabled at INFO level → /aws/bedrock/agentcore/udacity-agentcore
-  ℹ INFO latest agent log stream: local/LOTERRABD/2026-09-16/930dbd52 (5 min ago)
+  ℹ INFO latest agent log stream: local/LOTERRABD/2026-09-16/ce905da2 (2 min ago)
   ✓ PASS [+10pts] X-Ray tracing enabled: 100% sampling, Transaction Search → CloudWatch Logs (ACTIVE)
-  ℹ INFO 6 NovaMart trace(s) received by X-Ray in the last 6 hours - open CloudWatch → X-Ray traces → Service map for the screenshot
+  ℹ INFO 3 NovaMart trace(s) received by X-Ray in the last 6 hours - open CloudWatch → X-Ray traces → Service map for the screenshot
 
 ═══════════════════════════════════════════════════════
   Score: 20/20 pts (100%)

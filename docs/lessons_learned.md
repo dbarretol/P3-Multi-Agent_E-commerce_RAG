@@ -636,11 +636,11 @@ Service Map visibility, not just correct trace nesting.
 | Mode | Local Windows 11, Git Bash + PowerShell, `uv` |
 | AWS account | `187021010483` (personal), IAM user `udacity-agentcore-dev`, `AdministratorAccess`, permanent key (no session token) — see [[L11]] |
 | Region | us-east-1 |
-| Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`, currently on branch `fix/task6-real-observability` (see [[L27]] re: another unexpected auto-branch-switch, same class as [[L13]]/[[L23]]); no git remote configured (starter files verified against upstream via `gh api`/`curl`, see L12 — though see [[L27]] on that verification's staleness) |
+| Repo | working copy at `C:\WORKSPACES\AWS-UDACITY\P3-Multi-Agent_E-commerce_RAG`, currently on branch `fix/reviewer-feedback-evidence` (branched from `main` per the user's explicit "use a new branch, dont do everything in main" — see [[L31]]); no git remote configured for the starter-file diff (starter files verified against upstream via `gh api`/`curl`, see L12 — though see [[L27]] on that verification's staleness) |
 | `.env` | repo root, gitignored |
-| Stack | `udacity-agentcore` — ✅ torn down again 2026-09-16 ([[L30]]), after the 3rd redeploy (suffix `434837e0`) served its purpose. **No AWS resources currently live.** |
-| Data | last seeded 2026-09-16 (now deleted with the stack): 4 customers, 15 orders, 6 policy docs |
-| **Status** | ✅ **Complete and submitted-ready — real, verified 120/120 (100%).** The [[L17]] Task 6 SDK-gap ceiling is resolved: a real fix shipped upstream ([[L27]]) was ported in, replacing the [[L21]]-[[L23]] CloudWatch-Logs-Delivery-API workaround. Redeployed and independently re-verified ([[L28]]) — all 5 tasks pass genuinely, no mocked/faked checks. Both required screenshots captured ([[L29]]): 120/120 test score and X-Ray Service Map (9-node graph, Orchestrator → 4 workers + 3 KBs). All 4 official deliverables in place. Resources torn down and branch merged/pushed to `main` ([[L30]]). |
+| Stack | `udacity-agentcore` — ✅ **torn down 2026-09-17** (4th redeploy, suffix `a29f01a0`), after the project passed review ([[L32]]). No AWS resources currently live. |
+| Data | none live — was seeded 2026-09-16 (4th redeploy): 4 customers, 12 orders, 6 policy docs, now torn down with the rest of the stack |
+| **Status** | ✅ **Project passed Udacity review.** All 5 reviewer-requested screenshot categories were captured against the 4th redeploy ([[L31]]): `agent_orchestrator.py test` CLI run, 120/120 score, Knowledge Bases (status + synced data sources + the S3 Vectors vector bucket/index binding, found via S3's own "Vector buckets" console section rather than anywhere in Bedrock's KB pages), AgentCore Runtime + Guardrail, and the X-Ray Service Map. AWS resources torn down and independently verified gone ([[L32]]). Branch `fix/reviewer-feedback-evidence` still unmerged — separate decision pending from the user. |
 
 > Superseded a stale copy of this table that still listed account `303688964032` (Academy lab) and
 > "Blocked at Phase 0 / M0 step 0.3" — that was accurate mid-L7 but never updated after the L9 teardown
@@ -1304,3 +1304,145 @@ teardown ([[L19]], [[L26]]), not a problem.
 `origin`. This is the branch that carries the entire real Task 6 fix, the 3rd redeploy,
 and all evidence/documentation from this session - `main` was otherwise untouched
 throughout (per the git-hygiene correction earlier this session, [[L27]]).
+
+---
+
+## L31 — 2026-09-16: Reviewer feedback on the 3rd-redeploy submission - 4th redeploy to close the gaps
+
+Got real Udacity reviewer feedback on the submission [[L30]] shipped. Overall positive
+("production-grade multi-agent customer support system... good example of modular and
+well-documented agent code"), all 3 `.env` KB IDs confirmed matching the reviewer's own
+AWS console view, and the X-Ray Service Map screenshot confirmed showing
+`NovaMart-Orchestrator` connected to worker + KB nodes - so the core work and the [[L29]]
+evidence were sound. But it flagged concrete gaps, none of which had been asked for
+before this pass:
+
+1. **Missing a screenshot of `python src/agent_orchestrator.py test`** - a different
+   command than `tests/test_agent.py`, easy to conflate with the 120/120 pytest
+   evidence already captured. It's the orchestrator's own CLI test mode (3 real
+   scenarios, wrapped in `tracer.trace_request` - the actual thing that produces the
+   X-Ray traces behind the Service Map screenshot). Never captured a screenshot of this
+   specific command's output before.
+2. **Missing AWS Console screenshots of the Knowledge Base deployments** - specifically
+   that each KB uses the **S3 Vectors backing store** pointing at the correct
+   `VectorStoreBucket`, with its matching vector index name, and that each KB's data
+   source shows as **synced**. The `.env` IDs alone weren't enough - reviewer wants the
+   console configuration visually confirmed.
+3. **"fully deploy your solution including... agent core deployment"** - read as also
+   wanting the AgentCore Runtime and Guardrails console pages screenshotted, not just
+   inferred from `.env` values.
+
+**Problem: all of it required live resources, and everything was torn down in [[L30]]**
+right after the reviewed submission. Redeployed a 4th time (new suffix `a29f01a0`) via a
+background fork, same procedure as [[L28]]'s 3rd redeploy, on a **new branch**
+(`fix/reviewer-feedback-evidence`) - caught mid-task that the previous merge had left the
+working tree on `main`, and the user correctly stopped that before any new commits
+landed there ("use a new branch, dont do everything in main"). Branched before touching
+anything.
+
+**New deploy_all() wrinkle, beyond the [[L28]]-documented `ConflictException` timing
+bug:** `deploy_to_agentcore_runtime()` short-circuits on an existing runtime *name* and
+does not update its environment variables on a re-run. Since `deploy_all()`'s Step 1
+(build agent graph) runs before the KBs exist yet, the first `deploy` pass created a
+runtime whose baked-in env vars had empty/stale KB IDs. Fix: create the 3 KBs first,
+delete that premature runtime, re-run `deploy` so the runtime is created fresh *after*
+the KBs exist (correct KB IDs baked in from the start), then apply the same [[L28]]
+workaround (wait for `READY`, re-run `configure_observability()` standalone). **Lesson:**
+`deploy_all()`'s pre-written step ordering (guardrail → runtime → memory → observability,
+with KB creation happening separately/earlier via CLI per [[L14]]) only produces a
+fully-correct runtime if the KBs already exist *before* the first `deploy` invocation -
+worth remembering for any future redeploy rather than re-discovering this each time.
+
+Independently verified (not just trusting the fork's report): live `get-knowledge-base`
+calls confirm all 3 KBs `ACTIVE`, `get-agent-runtime` confirms `READY`, and re-ran the
+full `tests/test_agent.py all` suite myself against the fresh `.env` - real **120/120
+(100%)**, matching the fork's claim. Also re-captured all 6 per-task `.txt` evidence
+files fresh (old ones referenced the now-deleted 3rd-redeploy resource IDs) - hit the
+same [[L1]]/Windows-tmp-path class of issue in a new form: `python3`'s own `/tmp`
+resolves to `C:\tmp`, a *different* path than Git-Bash's `/tmp` (which Git-Bash maps to
+`C:\Users\...\AppData\Local\Temp` via its own MSYS layer) - a plain shell/Python path
+mismatch, not the previously-documented encoding issue. Fixed by resolving the real path
+with `cygpath -w /tmp` first and passing that explicit Windows path to Python instead of
+assuming `/tmp` means the same thing to both.
+
+Reorganized `evidence/required/` into 5 categories (CLI test screenshot, 120/120
+screenshot, KB console screenshots, AgentCore deployment screenshots, X-Ray Service Map)
+and moved the stale 3rd-redeploy screenshots to
+`evidence-old/required-3rd-redeploy/` - same "keep the historical record, mark current
+work as current" pattern as [[L29]]. All 5 screenshot categories are still pending the
+user's own AWS Console/terminal captures as of this entry.
+
+**All 5 categories captured over several rounds.** The CLI test (14 screenshots), 120/120
+(1 screenshot), AgentCore Runtime + Guardrail (2 screenshots), and X-Ray Service Map (4
+screenshots) all came in clean on the first pass. The Knowledge Base category took three
+attempts to get right - worth documenting the wrong turns, since they reveal a real gap
+in where AWS's own console surfaces this information:
+
+1. First attempt: KB overview pages (3 screenshots) - showed KB status `Available` and
+   data source status `Available`, but nothing about *which* S3 Vectors bucket/index
+   backs each KB (the overview page just says RAG type "Vector store", no bucket/index
+   name).
+2. I incorrectly guessed the KB's **Edit** page would show it (assumed a "Vector
+   database" wizard step). User first landed on **Edit data source** (a different page -
+   shows the S3 *document* source location, `policies/warranty/` etc., nothing to do with
+   vectors) - my instructions weren't specific enough about which "Edit" button. Corrected
+   to the KB-level Edit page, which turned out to be a dead end too: it only exposes
+   name/description/log delivery - AWS's console does **not** allow editing (or
+   displaying) the vector store binding after KB creation, so this info simply isn't
+   there.
+3. Also checked the KB's Observability/CloudWatch panel on a hunch - empty (no metrics
+   yet, unrelated to the vector store question anyway).
+4. **Correct location:** S3 Vectors is a distinct AWS service with its own console
+   section, not a tab inside the regular S3 bucket browser and not reachable through
+   Bedrock at all. In the S3 console's left sidebar there's a separate **"Vector
+   buckets"** entry (sibling to "Buckets", easy to miss). That's where
+   `udacity-agentcore-vectors-187021010483-a29f01a0` shows up as an `s3vectors:` ARN
+   resource with its own **Vector indexes** tab listing all 3 indexes
+   (`{returns,shipping,warranty}-policy-index`) with full ARNs. Two screenshots (the
+   vector buckets list, then the vector-indexes tab) closed the gap completely.
+
+**Lesson: don't assume a resource's configuration is discoverable from the console page
+of whatever *references* it (the KB) - S3 Vectors is a genuinely separate service/ARN
+namespace from both regular S3 and from Bedrock (same fact as [[L14]], but this is the
+first time it mattered for *finding a screenshot* rather than for API/teardown code) and
+has to be navigated to directly.** User also independently caught that a bucket sharing
+the exact same name (`udacity-agentcore-vectors-187021010483-a29f01a0`) shows up empty
+under the *regular* S3 "Buckets" list - that's the CFN template's unused plain-S3
+`VectorStoreBucket` ([[L14]]), a coincidentally-identical name, not the same resource.
+
+All 5 deliverables now complete: `evidence/required/README.md` and `evidence/README.md`
+both updated to ✅.
+
+---
+
+## L32 — 2026-09-17: Project passed review — final teardown of the 4th redeploy
+
+User confirmed the project **passed** Udacity's review and asked to tear down all live
+AWS resources (suffix `a29f01a0`, per [[L31]]). Same documented §16 procedure as every
+prior teardown ([[L19]], [[L26]], [[L30]]), executed directly (not via a fork, since a
+destructive action against real billed resources warrants first-hand verification
+rather than trusting a subagent's report):
+
+1. Discovered every live resource ID **fresh via `list`/`describe` calls** (not by
+   trusting `.env`/`PROJECT_PLAN.md`'s transcription) - confirmed all matched the
+   documented suffix `a29f01a0` exactly, including that the Gateway
+   (`novamart-support-a29f01a0-s9mkozly3s`) had **zero targets** registered (simpler
+   than the 2nd redeploy's failed-Lambda-targets case).
+2. **Teardown order:** delete 3 KBs' data sources then the KBs → delete the 3 S3
+   Vectors indexes then the vector bucket → delete Guardrail → delete AgentCore
+   Runtime → delete Gateway → delete Memory → empty both CFN-managed (versioned) S3
+   buckets (`list_object_versions` + `delete_objects`, including delete markers) →
+   delete the CFN stack and wait on `stack_delete_complete`.
+3. **Independently re-verified afterward** via fresh `list`/`describe` calls (not the
+   teardown script's own print output): Guardrails, Runtimes, Gateways, S3 Vectors
+   buckets, both S3 buckets, the CFN stack, and all 3 DynamoDB tables all confirmed
+   gone (`ValidationError: ... does not exist` for the stack, empty lists everywhere
+   else). KBs and Memory still showed `DELETING` at verification time - the same
+   normal async pattern as every prior teardown, not a problem.
+
+`.env`'s IDs are now stale pointers again, kept as the historical record of the 4th
+redeploy per the established pattern - not cleared out.
+
+No AWS resources are live on the account (`187021010483`) as of this entry. Nothing
+merged/pushed this session - branch `fix/reviewer-feedback-evidence` still holds the
+evidence commits, separate decision from the user on if/when to merge.

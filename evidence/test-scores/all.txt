@@ -26,20 +26,20 @@
 ───────────────────────────────────────────────────────
   Task 5 - Bedrock Knowledge Bases
 ───────────────────────────────────────────────────────
-  ✓ PASS [+8pts] RETURNS_KB_ID is set in environment (4IRFSZVYIS)
+  ✓ PASS [+8pts] RETURNS_KB_ID is set in environment (NWLWTRHQMK)
   ✓ PASS [+0pts] Returns Knowledge Base is ACTIVE
-  ✓ PASS [+8pts] SHIPPING_KB_ID is set in environment (UENXOCQKML)
+  ✓ PASS [+8pts] SHIPPING_KB_ID is set in environment (DBXGPHVIN9)
   ✓ PASS [+0pts] Shipping Knowledge Base is ACTIVE
-  ✓ PASS [+9pts] WARRANTY_KB_ID is set in environment (K5TVHTPUV9)
+  ✓ PASS [+9pts] WARRANTY_KB_ID is set in environment (TQHKJ83VJW)
   ✓ PASS [+0pts] Warranty Knowledge Base is ACTIVE
 
 ───────────────────────────────────────────────────────
   Task 6 - Observability
 ───────────────────────────────────────────────────────
   ✓ PASS [+10pts] CloudWatch logging enabled at INFO level → /aws/bedrock/agentcore/udacity-agentcore
-  ℹ INFO latest agent log stream: local/LOTERRABD/2026-09-16/930dbd52 (6 min ago)
+  ℹ INFO latest agent log stream: local/LOTERRABD/2026-09-16/ce905da2 (2 min ago)
   ✓ PASS [+10pts] X-Ray tracing enabled: 100% sampling, Transaction Search → CloudWatch Logs (ACTIVE)
-  ℹ INFO 6 NovaMart trace(s) received by X-Ray in the last 6 hours - open CloudWatch → X-Ray traces → Service map for the screenshot
+  ℹ INFO 3 NovaMart trace(s) received by X-Ray in the last 6 hours - open CloudWatch → X-Ray traces → Service map for the screenshot
 
 ═══════════════════════════════════════════════════════
   Score: 120/120 pts (100%)
